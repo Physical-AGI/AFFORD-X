@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Primary Meta Tags -->
+  <meta name="title" content="AFFORD-X: Affordance-Grounded Coding Agents are Robust Where Vision-Language-Action Policies Fail">
+  <meta name="description" content="A training-free affordance layer between a frozen coding agent and a frozen grasp detector. Functional re-ranking gated on embodiment feasibility improves paired success by +0.109 on LIBERO and +0.081 zero-shot on Meta-World, with no demonstrations, no reward and no gradient steps.">
+  <meta name="keywords" content="robot manipulation, affordance, grasp selection, code as policies, training-free, Contact-GraspNet, embodiment feasibility, LIBERO, Meta-World, reachability, grasp confidence">
+  <meta name="robots" content="index, follow">
+  <meta name="language" content="English">
+  <meta name="author" content="Md Selim Sarowar">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="AFFORD-X: Affordance-Grounded Coding Agents are Robust Where Vision-Language-Action Policies Fail">
+  <meta property="og:description" content="Gate on what the arm can execute, then rank by function. Training-free grasp selection that transfers zero-shot across two simulators, two arms and two grippers.">
+  <meta property="og:url" content="https://physical-agi.github.io/AFFORD-X/">
+  <meta property="og:image" content="https://physical-agi.github.io/AFFORD-X/static/images/method_framework.png">
+  <meta property="og:image:alt" content="The AFFORD-X framework: a frozen coding agent, frozen perception, and a training-free layer that gates grasp candidates on feasibility before ranking them by function">
+  <meta property="article:section" content="Robotics">
+  <meta property="article:tag" content="robot manipulation">
+  <meta property="article:tag" content="affordance">
+  <meta property="article:tag" content="training-free">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="AFFORD-X: Affordance-Grounded Coding Agents are Robust Where VLA Policies Fail">
+  <meta name="twitter:description" content="Training-free grasp selection. +0.109 on LIBERO, +0.081 zero-shot on Meta-World, 0 gradient steps.">
+  <meta name="twitter:image" content="https://physical-agi.github.io/AFFORD-X/static/images/method_framework.png">
+  <meta name="twitter:image:alt" content="The AFFORD-X framework diagram">
+
+  <!-- Academic / Google Scholar -->
+  <meta name="citation_title" content="Affordance-Grounded Coding Agents are Robust Where Vision-Language-Action Policies Fail">
+  <meta name="citation_author" content="Sarowar, Md Selim">
+  <meta name="citation_author" content="Kim, Sungho">
+  <meta name="citation_publication_date" content="2027">
+
+  <!-- Additional SEO -->
+  <meta name="theme-color" content="#6A3FB5">
+  <meta name="msapplication-TileColor" content="#6A3FB5">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="canonical" href="https://physical-agi.github.io/AFFORD-X/">
+
+  <!-- Preconnect for performance -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+
+  <title>AFFORD-X: Affordance-Grounded Coding Agents are Robust Where Vision-Language-Action Policies Fail</title>
+
+  <link rel="icon" type="image/png" href="static/images/robot.png">
+  <link rel="apple-touch-icon" href="static/images/robot.png">
+
+  <!-- Critical CSS -->
+  <link rel="stylesheet" href="static/css/bulma.min.css">
+  <link rel="stylesheet" href="static/css/index.css">
+
+  <!-- Non-critical CSS -->
+  <link rel="preload" href="static/css/fontawesome.all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <link rel="preload" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+
+  <noscript>
+    <link rel="stylesheet" href="static/css/fontawesome.all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  </noscript>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script defer src="static/js/fontawesome.all.min.js"></script>
+  <script defer src="static/js/index.js"></script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ScholarlyArticle",
+    "headline": "Affordance-Grounded Coding Agents are Robust Where Vision-Language-Action Policies Fail",
+    "author": [
+      { "@type": "Person", "name": "Md Selim Sarowar" },
+      { "@type": "Person", "name": "Sungho Kim" }
+    ],
+    "description": "A training-free affordance layer that sits between a frozen coding agent and a frozen grasp detector and re-ranks candidates by function gated on embodiment feasibility.",
+    "keywords": ["robot manipulation", "affordance", "grasp selection", "training-free", "embodiment feasibility", "LIBERO", "Meta-World"],
+    "abstract": "Language-model manipulation agents plan competently and then fail at the grasp, because the detectors they call rank candidates by closure stability alone. AFFORD-X is a training-free affordance layer that re-ranks candidates by function gated on embodiment feasibility. It improves paired end-to-end success by +0.109 on LIBERO and +0.081 zero-shot on Meta-World, consuming no demonstrations, no reward and no gradient steps.",
+    "isAccessibleForFree": true,
+    "codeRepository": "https://github.com/Physical-AGI/AFFORD-X",
+    "about": [
+      { "@type": "Thing", "name": "Robot Manipulation" },
+      { "@type": "Thing", "name": "Affordance Grounding" }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+<!-- Sticky section navigation -->
+<nav class="ai-nav" id="ai-nav" aria-label="Section navigation">
+  <div class="ai-nav-inner">
+    <a class="ai-nav-brand" href="#top">AFFORD<span>-X</span></a>
+    <button class="ai-nav-toggle" id="ai-nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+      <i class="fas fa-bars"></i>
+    </button>
+    <div class="ai-nav-links" id="ai-nav-links">
+      <a href="#abstract">Abstract</a>
+      <a href="#method">Method</a>
+      <a href="#explorer">Try it</a>
+      <a href="#ladder">Ladder</a>
+      <a href="#feasibility">Feasibility</a>
+      <a href="#headroom">Headroom</a>
+      <a href="#metaworld">Meta-World</a>
+      <a href="#limits">Nulls &amp; limits</a>
+      <a href="#bibtex">BibTeX</a>
+    </div>
+  </div>
+  <div class="ai-progress" id="ai-progress"></div>
+</nav>
+
+<main id="main-content">
+  <a id="top"></a>
+
+  <section class="hero">
+    <div class="hero-body">
+      <div class="container is-max-desktop">
+        <div class="columns is-centered">
+          <div class="column has-text-centered">
+            <h1 class="title is-1 publication-title">Affordance-Grounded Coding Agents are Robust Where Vision-Language-Action Policies Fail</h1>
+
+            <div class="is-size-5 publication-authors">
+              <span class="author-block">Md Selim Sarowar</span>,
+              <span class="author-block">Sungho Kim<sup>&dagger;</sup></span>
+            </div>
+            <p class="ai-anon-note" style="margin-top:0.5rem">
+              <sup>&dagger;</sup>Corresponding author. Yeungnam University.
+            </p>
+
+            <div class="ai-venue-badge">In preparation &middot; CVPR 2027</div>
+
+            <div class="column has-text-centered">
+              <div class="publication-links">
+                <span class="link-block">
+                  <span class="button is-normal is-rounded is-dark is-pending">
+                    <span class="icon"><i class="ai ai-arxiv"></i></span>
+                    <span>arXiv soon</span>
+                  </span>
+                </span>
+
+                <span class="link-block">
+                  <span class="button is-normal is-rounded is-dark is-pending">
+                    <span class="icon"><i class="fas fa-file-pdf"></i></span>
+                    <span>Paper soon</span>
+                  </span>
+                </span>
+
+                <span class="link-block">
+                  <a href="https://github.com/Physical-AGI/AFFORD-X" target="_blank" rel="noopener"
+                     class="external-link button is-normal is-rounded is-dark">
+                    <span class="icon"><i class="fab fa-github"></i></span>
+                    <span>Code</span>
+                  </a>
+                </span>
+
+                <span class="link-block">
+                  <a href="#bibtex" class="external-link button is-normal is-rounded is-dark">
+                    <span class="icon"><i class="fas fa-quote-left"></i></span>
+                    <span>Cite</span>
+                  </a>
+                </span>
+              </div>
+              <p class="ai-anon-note">
+                A plugin on a frozen code-as-policies agent. No learned controller, no gradient training,
+                and no task-specific data of any kind.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Teaser -->
+  <section class="hero teaser">
+    <div class="container is-max-desktop">
+      <div class="hero-body">
+        <figure class="ai-figure" style="margin-top:0">
+          <img src="static/images/method_framework.png" class="ai-zoomable"
+               alt="The AFFORD-X framework: a task instruction reaches a frozen coding agent that calls contextual_grasp; a frozen segmenter grounds the named part; the shaded AFFORD-X band gates candidates on the grip term and then ranks the survivors by function and plan; the winner goes to a frozen executor">
+          <figcaption>
+            <strong>AFFORD-X.</strong> The agent, the perception stack and the executor are all frozen; the shaded
+            band is the only component we contribute and it holds no trainable parameters. Selection is a single
+            stage, not a pipeline: the feasibility term <em>g<sub>k</sub></em> forms the set of candidates the arm can
+            actually execute, and function and plan rank <em>within</em> that set. Stage&nbsp;3 shows the rule twice.
+            On the left it is geometry: grey candidates fall below the feasibility floor and never compete, including
+            the ones on the ring that a quality-only ranker prefers and that would leave nothing to place on the peg.
+            On the right it is measurement, over the 1,781 selections in our runs that logged a score breakdown. Both
+            terms are plotted for the <em>selected</em> grasp: its gate term concentrates near the ceiling (median
+            0.82) while the preference product stays spread (median 0.69), which is what ranking inside a feasible
+            set looks like and what ranking that could override feasibility would not.
+          </figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- Key numbers -->
+  <section class="section ai-stats-section">
+    <div class="container is-max-desktop">
+      <div class="ai-stats">
+        <div class="ai-stat">
+          <div class="ai-stat-value" data-count-to="0.109" data-decimals="3" data-prefix="+">+0.000</div>
+          <div class="ai-stat-label">Paired gain on LIBERO, n = 440</div>
+        </div>
+        <div class="ai-stat">
+          <div class="ai-stat-value" data-count-to="0.081" data-decimals="3" data-prefix="+">+0.000</div>
+          <div class="ai-stat-label">Zero-shot replication on Meta-World, n = 160</div>
+        </div>
+        <div class="ai-stat">
+          <div class="ai-stat-value" data-count-to="0.806" data-decimals="3">0.000</div>
+          <div class="ai-stat-label">Grasp-failure AUROC once gated on reachability</div>
+        </div>
+        <div class="ai-stat">
+          <div class="ai-stat-value" data-count-to="0" data-decimals="0">0</div>
+          <div class="ai-stat-label">Demonstrations, reward signals and gradient steps</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Abstract -->
+  <section class="section hero is-light" id="abstract">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered has-text-centered">
+        <div class="column is-four-fifths">
+          <h2 class="title is-3">Abstract</h2>
+          <div class="content has-text-justified">
+            <p>
+              Manipulation policies are expensive in a way that does not amortise: a policy learned from
+              demonstrations must acquire new ones for every task, object and workspace, and reinforcement learning
+              moves that cost into reward engineering and interaction rather than removing it. We ask how far the
+              moment of contact can be improved with <strong>no task-specific data at all</strong>. Language-model
+              manipulation agents plan competently and then fail at the grasp, because the detectors they call rank
+              candidates by closure stability alone: a ranking blind both to which part of an object is functionally
+              correct to hold and to whether the arm can reach that grasp. We present AFFORD-X, a training-free
+              affordance layer that sits between a frozen agent and a frozen grasp detector and re-ranks candidates
+              by function <em>gated on embodiment feasibility</em>. Functional re-ranking improves paired end-to-end
+              success by +0.109&nbsp;[+0.052,&nbsp;+0.166] over raw grasp quality on LIBERO (<em>n</em>&nbsp;=&nbsp;440)
+              and replicates zero-shot at +0.081&nbsp;[+0.000,&nbsp;+0.163] on Meta-World
+              (<em>n</em>&nbsp;=&nbsp;160), across two simulators, two arms and two gripper morphologies with no
+              tuning. These gains are measured at the level of grasp selection; integrated into a full code-as-policy
+              agent under LIBERO-PRO perturbations we observe no end-to-end difference
+              (&minus;0.025&nbsp;[&minus;0.175,&nbsp;+0.150], <em>p</em>&nbsp;=&nbsp;1.000), and we report that null
+              together with the power and tool-set confounds that bound it. Our central mechanism finding is that
+              feasibility is the term deciding whether affordance signals help at all: a perception-only grasp
+              confidence predicts failure at AUROC 0.673 and fails its pre-registered bar, while multiplying it by
+              the executed grasp's reachability reaches 0.806 under prospective validation; and a grasp memory that
+              ignores feasibility actively hurts (&minus;0.073&nbsp;[&minus;0.132,&nbsp;&minus;0.016]). Conditioning
+              the grasp on the agent's declared next action is worth +0.233&nbsp;[+0.083,&nbsp;+0.383] where the
+              executor can express a constrained placement, and is unmeasurable where it cannot: over 2,392
+              controlled paired episodes we show that put-X-on-Y benchmarks structurally cannot register
+              grasp-placement coupling, and we give the headroom arithmetic that identifies a benchmark regime that
+              can.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Method -->
+  <section class="section" id="method">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3 has-text-centered">Where the Layer Sits</h2>
+      <p class="ai-section-intro">
+        Four stages, and only one of them is ours. Pick a stage to see what it does and what is frozen.
+      </p>
+
+      <div class="ai-loop">
+        <div class="ai-loop-stages" role="tablist" aria-label="Pipeline stages">
+          <button class="ai-stage" role="tab" aria-selected="true" data-stage="agent" style="--stage-c:var(--stage-agent)">
+            <span class="ai-stage-num">1</span>
+            <span>
+              <span class="ai-stage-name">Coding agent</span>
+              <span class="ai-stage-sub">Frozen LM writes Python, declares its next action</span>
+            </span>
+          </button>
+          <div class="ai-stage-arrow" role="presentation" aria-hidden="true"><i class="fas fa-arrow-down"></i></div>
+
+          <button class="ai-stage" role="tab" aria-selected="false" data-stage="ground" style="--stage-c:var(--stage-ground)">
+            <span class="ai-stage-num">2</span>
+            <span>
+              <span class="ai-stage-name">Ground</span>
+              <span class="ai-stage-sub">Frozen segmenter and detector &rarr; K candidates</span>
+            </span>
+          </button>
+          <div class="ai-stage-arrow" role="presentation" aria-hidden="true"><i class="fas fa-arrow-down"></i></div>
+
+          <button class="ai-stage" role="tab" aria-selected="false" data-stage="select" style="--stage-c:var(--stage-select)">
+            <span class="ai-stage-num">3</span>
+            <span>
+              <span class="ai-stage-name">Gate, then rank</span>
+              <span class="ai-stage-sub">Ours. Feasibility first, preference second</span>
+            </span>
+          </button>
+          <div class="ai-stage-arrow" role="presentation" aria-hidden="true"><i class="fas fa-arrow-down"></i></div>
+
+          <button class="ai-stage" role="tab" aria-selected="false" data-stage="execute" style="--stage-c:var(--stage-execute)">
+            <span class="ai-stage-num">4</span>
+            <span>
+              <span class="ai-stage-name">Execute</span>
+              <span class="ai-stage-sub">Frozen IK, then the agent re-perceives</span>
+            </span>
+          </button>
+        </div>
+
+        <div class="ai-loop-detail" id="ai-loop-detail">
+          <div class="ai-loop-eyebrow"></div>
+          <h3></h3>
+          <p class="ai-loop-lead"></p>
+          <p class="ai-loop-body"></p>
+          <div class="ai-loop-spec"></div>
+        </div>
+      </div>
+
+      <h2 class="title is-3 has-text-centered" style="margin-top:3.5rem">The Four Terms</h2>
+      <p class="ai-section-intro">Two of them decide eligibility. Two of them decide preference. The order is the contribution.</p>
+
+      <div class="ai-tabs" role="tablist">
+        <button class="ai-tab is-active" role="tab" aria-selected="true" data-tab="gate">Embodiment gate</button>
+        <button class="ai-tab" role="tab" aria-selected="false" data-tab="function">Functional prior</button>
+        <button class="ai-tab" role="tab" aria-selected="false" data-tab="plan">Plan constraints</button>
+        <button class="ai-tab" role="tab" aria-selected="false" data-tab="confidence">Confidence</button>
+      </div>
+
+      <div class="ai-tab-panel is-active" role="tabpanel" data-panel="gate">
+        <div class="ai-note-grid">
+          <div class="ai-note">
+            <h3>What it is</h3>
+            <p>The executor's grip term <em>g<sub>k</sub></em>&nbsp;=&nbsp;<em>q<sub>k</sub> r<sub>k</sub> c<sub>k</sub></em>
+              combines detector quality, reachability and collision margin, and a relative floor keeps only the
+              candidates the arm can plausibly execute: <em>g<sub>k</sub></em>&nbsp;&ge;&nbsp;0.5&nbsp;max<sub>j</sub>&nbsp;<em>g<sub>j</sub></em>.
+              Everything below that floor scores zero.</p>
+          </div>
+          <div class="ai-note">
+            <h3>Why the order matters</h3>
+            <p>Multiplying every term into every candidate lets a semantic or plan-derived preference outbid grip
+              feasibility. In an early pilot it did exactly that: 16 of 19 paired losses under plan conditioning
+              failed at the grasp itself rather than at the subsequent placement.</p>
+          </div>
+        </div>
+
+        <pre class="ai-snippet" style="margin-top:1.25rem"><code><span class="c"># affordx/capx/affordance_ops.py :: embodiment_gated_scores</span>
+grip = quality * reachable * collision
+gate = grip &gt;= <span class="n">GRIP_GATE_FRAC</span> * grip.max()          <span class="c"># GRIP_GATE_FRAC = 0.5</span>
+<span class="f">return</span> np.where(gate, grip * functional * context * memory_prior, <span class="n">0.0</span>)</code></pre>
+        <p class="ai-table-note">
+          Two properties follow and both matter. Preference can choose among holdable grasps but can never select an
+          unholdable one. And with neutral context and memory the rule reduces exactly to grip ordering, so the
+          best-grip candidate always passes its own gate: the layer degrades to the detector rather than to noise.
+        </p>
+      </div>
+
+      <div class="ai-tab-panel" role="tabpanel" data-panel="function">
+        <div class="ai-note-grid">
+          <div class="ai-note">
+            <h3>Approach</h3>
+            <p>Grasps whose gripper axis aligns with the verb's canonical approach are preferred, scored as
+              0.3&nbsp;+&nbsp;0.7<em>d<sub>k</sub></em> with <em>d<sub>k</sub></em> the downness of the approach axis
+              for a top-down verb. Misaligned grasps are attenuated rather than discarded.</p>
+          </div>
+          <div class="ai-note">
+            <h3>Part semantics</h3>
+            <p>A verb-conditioned part query restricts candidates to the functionally correct region of the object,
+              so a wrench is held by its handle rather than its ring. Candidates outside the arm's reachable box are
+              multiplied by 0.1.</p>
+          </div>
+        </div>
+        <p class="ai-table-note">
+          A mug handle, a wrench handle and a knife handle are the parts a person would hold. Grasping the blade, the
+          ring or the rim is often more stable and usually wrong: this term is what the detector's closure-stability
+          objective cannot express.
+        </p>
+      </div>
+
+      <div class="ai-tab-panel" role="tabpanel" data-panel="plan">
+        <div class="ai-note-grid">
+          <div class="ai-note">
+            <h3>Compiled from the declaration</h3>
+            <p>When the agent declares its next action, that declaration compiles into geometric constraints over the
+              candidate set. The primitives are pure geometry over the segmented point cloud, with no learned
+              component anywhere in the path.</p>
+          </div>
+          <div class="ai-note">
+            <h3>Where it pays</h3>
+            <p>Threading a wrench over a peg compiles to <code>grasp_region:handle</code>, which leaves the ring free.
+              That is worth +0.233&nbsp;[+0.083,&nbsp;+0.383] on Meta-World assembly, and is unmeasurable on eight
+              other regimes for reasons the headroom section makes precise.</p>
+          </div>
+        </div>
+
+        <div class="ai-dsl">
+          <code>grasp_region</code><code>keep_part_clear</code><code>clearance</code><code>approach_from</code><code>avoid_occluding</code>
+        </div>
+        <p class="ai-table-note">
+          The mechanism has a predicted signature and shows it: placement failures fall while grasp failures do not,
+          so the constraint does not grasp better, it places better <em>given</em> a grasp. The same signature
+          replicates independently on LIBERO-10 mug-to-plate, where placement given a grasp rises monotonically
+          0.81&nbsp;&rarr;&nbsp;0.94&nbsp;&rarr;&nbsp;1.00.
+        </p>
+      </div>
+
+      <div class="ai-tab-panel" role="tabpanel" data-panel="confidence">
+        <div class="ai-note-grid">
+          <div class="ai-note">
+            <h3>Pre-registered, and it failed</h3>
+            <p>We declared a perception-side carrier in advance and it missed its 0.75 bar twice, at AUROC 0.673 on
+              100 held-out episodes and again on a fresh replication. We report the failure before the revision
+              because the order is what a reader needs to audit the claim.</p>
+          </div>
+          <div class="ai-note">
+            <h3>The revision that works</h3>
+            <p>Multiplying the carrier by the executed grasp's reachability reaches 0.806, declared <em>before</em>
+              the validation episodes were collected. Confidence is thus a property of the grasp and the arm, not of
+              the perception alone.</p>
+          </div>
+        </div>
+        <p class="ai-table-note">
+          The agent uses this scalar as a gate before committing to a motion. The threshold and the verify-and-replan
+          loop belong to the agent's policy, outside our boundary.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive explorer -->
+  <section class="section hero is-light" id="explorer">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3 has-text-centered">Turn the Gate Off</h2>
+      <p class="ai-section-intro">
+        The task is &ldquo;put the wrench on the peg&rdquo;, the same scene as stage&nbsp;3 of the framework figure.
+        Eight candidates come back from the detector. Switch terms on and off and watch which one the arm executes.
+      </p>
+
+      <div class="ax-formula" id="ax-formula">
+        <span class="ax-term is-gate" data-term="g">g = q&middot;r&middot;c</span>
+        <span class="ax-op">then</span>
+        <span class="ax-term is-gate" data-gate>F = { k : g&#8342; &ge; 0.50 &middot; max g }</span>
+        <span class="ax-op">then rank</span>
+        <span class="ax-term is-pref" data-term="f">f</span>
+        <span class="ax-op">&times;</span>
+        <span class="ax-term is-pref" data-term="x">x</span>
+        <span class="ax-op">&times;</span>
+        <span class="ax-term is-pref" data-term="m">m</span>
+      </div>
+
+      <div class="ax-explorer">
+        <div class="ax-controls">
+          <img src="static/images/scene_wrench.png" class="ax-scene" alt="The Meta-World assembly scene: a wrench with a green handle and a grey ring lies on the table, with the red peg in front of it and the Sawyer gripper above">
+          <p class="ax-scene-note">Green handle, grey ring, red peg. The ring has to end up over the peg, so whatever holds the wrench must not be holding the ring.</p>
+          <h3>Selection rule</h3>
+
+          <button class="ax-toggle is-on is-gate" data-flag="gate" aria-pressed="true">
+            <span class="ax-toggle-box"><i class="fas fa-check"></i></span>
+            <span class="ax-toggle-text"><strong>Embodiment gate</strong><em>Feasible set before preference</em></span>
+          </button>
+
+          <button class="ax-toggle is-on" data-flag="fn" aria-pressed="true">
+            <span class="ax-toggle-box"><i class="fas fa-check"></i></span>
+            <span class="ax-toggle-text"><strong>Functional prior <em style="display:inline">f</em></strong><em>Approach alignment and part semantics</em></span>
+          </button>
+
+          <button class="ax-toggle is-on" data-flag="plan" aria-pressed="true">
+            <span class="ax-toggle-box"><i class="fas fa-check"></i></span>
+            <span class="ax-toggle-text"><strong>Plan constraint <em style="display:inline">x</em></strong><em>grasp_region:handle, from the declared next action</em></span>
+          </button>
+
+          <button class="ax-toggle is-on" data-flag="memory" aria-pressed="true">
+            <span class="ax-toggle-box"><i class="fas fa-check"></i></span>
+            <span class="ax-toggle-text"><strong>Memory prior <em style="display:inline">m</em></strong><em>Recalled from an earlier episode, clipped to [0.3, 1.8]</em></span>
+          </button>
+
+          <div class="ax-slider">
+            <div class="ax-slider-head"><span>Feasibility floor &tau;</span><b id="ax-tau-val">0.50</b></div>
+            <input type="range" id="ax-tau" min="0" max="100" step="5" value="50" aria-label="Feasibility floor tau">
+          </div>
+
+          <div class="ax-verdict" id="ax-verdict"></div>
+        </div>
+
+        <div>
+          <div class="ax-cands" id="ax-cands"></div>
+          <p class="ai-table-note" style="text-align:left">
+            Bars are the final score <em>s<sub>k</sub></em>, normalised to the winner. Gated candidates score exactly
+            zero and are drawn hatched. Three things are worth trying: turn the <strong>memory prior</strong> on with
+            the <strong>gate off</strong>, which promotes a pinch grasp the executor cannot hold and reproduces the
+            pilot failure the gate exists to prevent; turn the <strong>plan constraint</strong> off, which hands the
+            task back to the ring; and raise <strong>&tau;</strong> past 0.7, which shrinks the feasible set until the
+            plan has nothing left to choose between.
+          </p>
+        </div>
+      </div>
+
+      <p class="ai-table-note">
+        <strong>What this is.</strong> A worked example, not logged data: the eight candidates and their term values
+        are illustrative. The scoring rule, the 0.5 floor and the term ranges are the shipped ones, from
+        <code>affordx/capx/affordance_ops.py</code>. Per-candidate score arrays are not written by the evaluation
+        runs, so a real candidate set cannot be replayed here; the measured distribution of the terms for
+        <em>selected</em> grasps, over 1,781 selections, is the right panel of the framework figure above.
+      </p>
+    </div>
+  </section>
+
+  <!-- Ladder -->
+  <section class="section" id="ladder">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3 has-text-centered">The Scripted Ladder</h2>
+      <p class="ai-section-intro">
+        Four rungs share executor, perception, seeds and task instances and differ by exactly one mechanism, so each
+        paired delta attributes to one change. Switch the metric; hover a marker for its interval.
+      </p>
+
+      <div class="ax-pills">
+        <button class="ax-pill is-active" data-metric="success">End-to-end success</button>
+        <button class="ax-pill" data-metric="grasp">Grasp rate</button>
+        <button class="ax-pill" data-metric="place">P(place | grasp)</button>
+      </div>
+
+      <div class="ax-chart-card ax-chart-host" id="ax-ladder"></div>
+
+      <p class="ai-table-note">
+        Markers are rates with 95% bootstrap intervals; the annotated values are <em>paired</em> bootstraps on
+        matched (instruction, seed) keys, which is the estimate the paper quotes. Keying on the task language rather
+        than the task index matters: suite indices collide across suites and would silently pair two different tasks.
+      </p>
+
+      <div class="ax-cards">
+        <div class="ax-card">
+          <div class="ax-card-eyebrow">L1 &rarr; L2 &middot; the contribution</div>
+          <h3>Functional re-ranking is worth +0.109 on LIBERO and +0.081 on Meta-World</h3>
+          <p>The Meta-World replication is zero-shot: the same code, unchanged, moved from a 7-DoF Franka Panda to a
+            4-DoF Sawyer with a different gripper and a different task distribution. Grasp rate rises from 0.477 to
+            0.623 on LIBERO and 0.619 to 0.681 on Meta-World, which is where the end-to-end gain comes from.</p>
+        </div>
+        <div class="ax-card is-null">
+          <div class="ax-card-eyebrow">L3 &rarr; L4 &middot; reported, not omitted</div>
+          <h3>A grasp memory that ignores feasibility costs &minus;0.073</h3>
+          <p>Its prior was fitted to a failure-dominated pool, 8 successes against 44 failures, which makes it
+            repulsive almost everywhere. We withdraw memory as a contribution rather than report the mechanism
+            without the effect, and we leave the rung on the chart.</p>
+        </div>
+      </div>
+
+      <div class="ax-two-up">
+        <figure>
+          <img src="static/images/env_frame.png" class="ai-zoomable" alt="A LIBERO tabletop scene rendered from the agent view: a 7-DoF Franka Panda above a wooden table holding bowls, a plate, a stove and a cabinet">
+          <figcaption><strong>LIBERO.</strong> 7-DoF Franka Panda, parallel-jaw gripper, tabletop suites with a 0.15 m placement tolerance.</figcaption>
+        </figure>
+        <figure>
+          <img src="static/images/env_metaworld.png" class="ai-zoomable" alt="A Meta-World scene: a 4-DoF Sawyer arm above a wooden bench with a blue ball, and a detector box drawn around the target at confidence 0.31">
+          <figcaption><strong>Meta-World.</strong> 4-DoF Sawyer, different gripper, different task distribution. The same code moved here unchanged.</figcaption>
+        </figure>
+      </div>
+
+      <div class="ai-table-wrap" style="margin-top:2rem">
+        <table class="ai-table">
+          <caption class="ai-caption">Scripted L-ladder on Meta-World, paired by (task, seed)</caption>
+          <thead>
+            <tr>
+              <th class="ai-th-text" scope="col">Rung</th>
+              <th scope="col">Grasp</th>
+              <th scope="col">Success</th>
+              <th class="ai-col-avg" scope="col">Success (constrained)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row">L1 &middot; raw detector</th><td>0.619</td><td>0.350</td><td class="ai-col-avg">0.463</td></tr>
+            <tr class="ai-ours"><th scope="row">L2 &middot; + functional prior <span class="ai-ours-tag">Ours</span></th><td>0.681</td><td>0.431</td><td class="ai-col-avg">0.562</td></tr>
+            <tr><th scope="row">L3 &middot; + plan constraints</th><td>0.625</td><td>0.406</td><td class="ai-col-avg">0.562</td></tr>
+            <tr><th scope="row">L2 &minus; L1</th><td colspan="3" class="ai-th-text">+0.081 [+0.000, +0.163] (n = 160)</td></tr>
+            <tr><th scope="row">L3 &minus; L2</th><td colspan="3" class="ai-th-text">&minus;0.025 [&minus;0.113, +0.062] (n = 160)</td></tr>
+            <tr><th scope="row">L3 &minus; L2, constrained</th><td colspan="3" class="ai-th-text">+0.000 [&minus;0.125, +0.125] (n = 80)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Feasibility -->
+  <section class="section hero is-light" id="feasibility">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3 has-text-centered">Feasibility Is the Binding Constraint</h2>
+      <p class="ai-section-intro">
+        Three mechanisms we added independently each underperformed in the same way, and each recovered when it was
+        subordinated to what the embodiment could actually execute. The confidence result is the direct measurement.
+      </p>
+
+      <div class="columns is-vcentered" style="margin-top:1rem">
+        <div class="column is-half">
+          <div class="ax-chart-card ax-chart-host" id="ax-roc"></div>
+        </div>
+        <div class="column is-half">
+          <div class="ai-limits" style="grid-template-columns:1fr">
+            <div class="ai-limit">
+              <h3>Grasp confidence &middot; 0.673 &rarr; 0.806</h3>
+              <p>The perception-only carrier misses the 0.75 bar. Multiplying it by the executed grasp's reachability
+                clears it on 88 held-out episodes under prospective validation. The same substitution on the earlier
+                post-hoc collection gives 0.693&nbsp;&rarr;&nbsp;0.801.</p>
+            </div>
+            <div class="ai-limit">
+              <h3>Grasp memory &middot; &minus;0.073 [&minus;0.132, &minus;0.016]</h3>
+              <p>A prior fitted without regard to feasibility is repulsive almost everywhere and measurably hurts.</p>
+            </div>
+            <div class="ai-limit">
+              <h3>Plan constraints &middot; negative, then +0.233</h3>
+              <p>Negative while they could outbid grip quality; worth +0.233&nbsp;[+0.083,&nbsp;+0.383] once selection
+                is restricted to a feasible subset first.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ax-callout">
+        <strong>How much this establishes.</strong> The confidence result is a direct, prospectively validated
+        measurement of the feasibility term. The plan-constraint and memory results are consistent with the account
+        but are <em>not</em> a controlled gate ablation: our gated and ungated runs differ in the placement primitive
+        as well as the gate, so their difference cannot be attributed to gating alone. A run that varies only the
+        feasibility gate is the experiment this claim requires, and we name it as outstanding rather than reporting
+        the synthesis as an independently measured effect.
+      </div>
+
+      <figure class="ai-figure">
+        <img src="static/images/results.png" class="ai-zoomable"
+             alt="Two panels: the L-ladder with paired bootstrap deltas on LIBERO and Meta-World, and ROC curves showing the perception-only confidence at AUROC 0.673 against the reachability-gated carrier at 0.806">
+        <figcaption>
+          <strong>Both panels are recomputed from the run logs at build time</strong>, so no number is transcribed.
+          <strong>(a)</strong> The scripted L-ladder; L4 is shown because it is negative. <strong>(b)</strong> Grasp
+          confidence on held-out episodes: the pre-registered perception-only score misses its 0.75 bar at AUROC
+          0.673, and multiplying it by the executed grasp's reachability clears it at 0.806.
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- Headroom -->
+  <section class="section" id="headroom">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3 has-text-centered">Can the Benchmark Even Measure It?</h2>
+      <p class="ai-section-intro">
+        A plan-conditioned grasp shows up end-to-end only if placement is both imperfect given a successful grasp and
+        sensitive to which grasp was taken. Hover a regime to read its paired interval.
+      </p>
+
+      <div class="ax-chart-card ax-chart-host" id="ax-headroom"></div>
+
+      <p class="ai-table-note">
+        Nine regimes with at least 10 paired episodes: two LIBERO suites and seven Meta-World tasks. Filled markers
+        have an interval excluding zero; exactly one does. Headroom is <strong>necessary and not sufficient</strong>:
+        regimes at <em>x</em>&nbsp;&asymp;&nbsp;0 cannot register the effect and none does, while hammer has ample
+        headroom (0.45) and a negative point estimate, because the scripted top-down executor floors its placement
+        irrespective of grasp.
+      </p>
+
+      <div class="ax-cards">
+        <div class="ax-card">
+          <div class="ax-card-eyebrow">Why assembly is not a lucky draw</div>
+          <h3>Nominated before the run, with a predicted signature that shows</h3>
+          <p>Assembly was named in advance as the one regime whose executor can express a constrained placement, on
+            the mechanical argument that the wrench's ring must stay clear to thread the peg. It is not the survivor
+            of a scan. Placement failures fall while grasp failures do not, which a chance-significant result has no
+            reason to satisfy, and the same signature replicates on LIBERO-10 mug-to-plate.</p>
+        </div>
+        <div class="ax-card is-null">
+          <div class="ax-card-eyebrow">Why the aggregate would have misled us</div>
+          <h3>Put-X-on-Y benchmarks cannot register grasp-placement coupling</h3>
+          <p>On LIBERO spatial, placement succeeds for 99.0% of episodes in which a grasp succeeded, so there is no
+            headroom to recover. Pooled across suites, L2 already places 86.5% of what it grasps, so even perfect
+            placement is worth +0.084, which is the bar itself. Where placement <em>is</em> constrained, the scripted
+            executor floors it equally for all rungs: on LIBERO goal, L3 grasps strictly better
+            (0.592&nbsp;&rarr;&nbsp;0.692) yet places worse given a grasp (0.507&nbsp;&rarr;&nbsp;0.434), netting
+            exactly zero.</p>
+        </div>
+      </div>
+
+      <div class="ax-callout">
+        <strong>The practical contribution here is the arithmetic, not the number.</strong> It tells a practitioner
+        in advance whether a benchmark can register the effect they intend to measure. Reporting only the aggregate
+        would have led us to discard a mechanism that is worth +0.233 where it can act.
+      </div>
+    </div>
+  </section>
+
+  <!-- Meta-World -->
+  <section class="section hero is-light" id="metaworld">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3 has-text-centered">Meta-World MT50, Zero-Shot</h2>
+      <p class="ai-section-intro">
+        189 episodes over 37 of 50 tasks, 5 episodes per task, with no task-specific training of any kind. Filter the
+        grid and watch the aggregate move: a single number over all tasks mixes tasks the layer cannot act on with
+        tasks it can.
+      </p>
+
+      <div class="ax-pills">
+        <button class="ax-pill is-active" data-tier="all">All tiers</button>
+        <button class="ax-pill" data-tier="easy">Easy</button>
+        <button class="ax-pill" data-tier="medium">Medium</button>
+        <button class="ax-pill" data-tier="hard">Hard</button>
+        <button class="ax-pill" data-tier="very hard">Very hard</button>
+      </div>
+
+      <div class="ax-pills">
+        <button class="ax-toggle is-on" data-filter="revolute" aria-pressed="true" style="width:auto">
+          <span class="ax-toggle-box"><i class="fas fa-check"></i></span>
+          <span class="ax-toggle-text"><strong>Include revolute-articulation tasks</strong><em>Nine hinge tasks our straight-line pull primitive cannot solve</em></span>
+        </button>
+        <button class="ax-toggle is-on" data-filter="nongrasp" aria-pressed="true" style="width:auto">
+          <span class="ax-toggle-box"><i class="fas fa-check"></i></span>
+          <span class="ax-toggle-text"><strong>Include non-prehensile tasks</strong><em>No grasp to select, so the layer contributes nothing either way</em></span>
+        </button>
+      </div>
+
+      <div class="ax-readout">
+        <div>
+          <div class="ax-readout-val" id="ax-mt-rate">0.466</div>
+          <div class="ax-readout-label">Success rate over the selected tasks</div>
+        </div>
+        <div>
+          <div class="ax-readout-val" id="ax-mt-tasks">38</div>
+          <div class="ax-readout-label">Tasks selected</div>
+        </div>
+        <div>
+          <div class="ax-readout-val" id="ax-mt-eps">88 / 189</div>
+          <div class="ax-readout-label">Successful episodes</div>
+        </div>
+      </div>
+
+      <div class="ax-grid" id="ax-tasks"></div>
+
+      <div class="ax-filter-key">
+        <span><i class="ax-key-rev"></i>revolute articulation</span>
+        <span><i class="ax-key-grasp">&#9679;</i> grasp-dependent task</span>
+        <span>each square is one episode</span>
+      </div>
+
+      <p class="ai-table-note">
+        <strong>The easy tier is not easy for this executor.</strong> Nine tasks turn about a hinge, all nine are
+        labelled easy, and all nine score 0/5: our <code>pull</code> primitive commands a straight line, which is
+        exact on a prismatic joint and wrong on a revolute one. Removing that family raises easy from 0.492 to 0.787
+        and the aggregate from 0.466 to 0.611, restoring the benchmark's own ordering. Both figures are given so the
+        exclusion is visible. Restricting attention to the six tasks whose success actually depends on which grasp is
+        chosen gives 20/30, or 66.7%.
+      </p>
+
+      <div class="ai-table-wrap" style="margin-top:2rem">
+        <table class="ai-table">
+          <caption class="ai-caption">Meta-World tier success (%). <strong>Train</strong> gives the task-specific supervision each method consumes: D = demonstrations, R = reward/RL.</caption>
+          <thead>
+            <tr>
+              <th class="ai-th-text" scope="col">Method</th>
+              <th class="ai-th-text" scope="col">Venue</th>
+              <th class="ai-th-text" scope="col">Train</th>
+              <th scope="col">Easy</th><th scope="col">Mid</th><th scope="col">Hard</th><th scope="col">V. Hard</th>
+              <th class="ai-col-avg" scope="col">Avg.</th>
+              <th scope="col">Cov.</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row">HarmonyDream</th><td class="ai-th-text">ICML'24</td><td class="ai-th-text">R</td><td>81.0</td><td>91.0</td><td>72.5</td><td>44.5</td><td class="ai-col-avg">72.2</td><td>50/50</td></tr>
+            <tr><th scope="row">Diffusion Policy</th><td class="ai-th-text">IJRR'25</td><td class="ai-th-text">D</td><td>83.6</td><td>31.1</td><td>9.0</td><td>26.6</td><td class="ai-col-avg">37.6</td><td>50/50</td></tr>
+            <tr><th scope="row">TinyVLA</th><td class="ai-th-text">ICRA'25</td><td class="ai-th-text">D</td><td>77.6</td><td>21.5</td><td>11.4</td><td>15.8</td><td class="ai-col-avg">31.6</td><td>50/50</td></tr>
+            <tr><th scope="row">Mamba Policy</th><td class="ai-th-text">IROS'25</td><td class="ai-th-text">D</td><td>95.4</td><td>92.2</td><td>48.3</td><td>71.2</td><td class="ai-col-avg">76.8</td><td>50/50</td></tr>
+            <tr><th scope="row">&pi;<sub>0</sub></th><td class="ai-th-text">RSS'26</td><td class="ai-th-text">D</td><td>71.8</td><td>48.2</td><td>41.7</td><td>30.0</td><td class="ai-col-avg">47.9</td><td>50/50</td></tr>
+            <tr class="ai-ours"><th scope="row">AFFORD-X <span class="ai-ours-tag">Ours</span></th><td class="ai-th-text">&ndash;</td><td class="ai-th-text"><strong>none</strong></td><td>49.2</td><td>45.7</td><td>33.3</td><td>50.0</td><td class="ai-col-avg">44.6<sup>&dagger;</sup></td><td>37/50</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="ai-table-note">
+        <sup>&dagger;</sup>Partial evaluation: our run covers 37 of 50 tasks, so this row is not directly comparable
+        to the complete rows above and <strong>we do not read the table as a ranking</strong>. Every published entry
+        consumes task-specific supervision on these very tasks; AFFORD-X consumes neither demonstrations nor reward.
+        The averages therefore separate methods by supervision budget at least as much as by mechanism. Our very-hard
+        figure rests on 2 of 5 tasks and 10 episodes, far too little to separate from any published row, and our easy
+        figure is depressed by the revolute-articulation defect rather than by the selection layer.
+      </p>
+    </div>
+  </section>
+
+  <!-- Nulls and limits -->
+  <section class="section" id="limits">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3 has-text-centered">Nulls and Evidence Boundaries</h2>
+      <p class="ai-section-intro">
+        The negative results carry most of the methodological content, so they are reported in full rather than
+        summarised away.
+      </p>
+
+      <div class="ax-callout is-null">
+        <strong>The end-to-end agent evaluation is a null.</strong> On LIBERO-PRO's position perturbation the two
+        arms are indistinguishable: paired per-task delta &minus;0.025&nbsp;[&minus;0.175,&nbsp;+0.150], Fisher exact
+        <em>p</em>&nbsp;=&nbsp;1.000, over 10 tasks &times; 4 trials per arm. Two limitations bound what that
+        measurement can support. At 40 trials per arm the design resolves only about 20-point differences, and the
+        arm exposed the full tool set, including the plan-conditioning and memory tools that are neutral-to-harmful
+        in aggregate. It is therefore not a clean test of the functional re-ranking the ladder establishes. Of the
+        twenty suite-by-axis cells in the LIBERO-PRO matrix we have measured exactly one, so we do not reproduce the
+        leaderboard here.
+      </div>
+
+      <h3 class="title is-4 has-text-centered" style="margin-top:3rem">Limitations</h3>
+      <div class="ai-limits">
+        <div class="ai-limit">
+          <h3>Open-vocabulary grounding fails on product names</h3>
+          <p>In every detector we tried. On a grocery scene, OWLv2 is blind to four of six product names and
+            confidently wrong on a fifth; SAM3 is wrong on three of six, though it fails at near-zero confidence
+            where OWLv2 failed at 0.20 to 0.25. Both ground visual categories reliably (0.71 to 0.91). The failure
+            mode to guard against is confident wrongness, not blindness.</p>
+        </div>
+        <div class="ai-limit">
+          <h3>Revolute articulation is unsolved, and we could not fix it</h3>
+          <p>The straight-line pull primitive is exact on prismatic joints and wrong on revolute ones: 10/10 on
+            drawers against 0 across doors, faucets, handles and levers. We implemented a tangent-following pull and
+            tested it twice under matched seeds. It failed both times and regressed the prismatic control it was
+            required to preserve, so we left it unregistered and report the negative result.</p>
+        </div>
+        <div class="ai-limit">
+          <h3>The 4-DoF embodiment collapses poses to points</h3>
+          <p>Meta-World's Sawyer reduces grasp poses to grasp points, so the orientation half of grasp selection is
+            untested there. The LIBERO Panda is where orientation is exercised.</p>
+        </div>
+        <div class="ai-limit">
+          <h3>The scripted executor cannot perform constrained placement</h3>
+          <p>Which is precisely what makes plan-conditioned grasping unmeasurable on most regimes. That is a
+            limitation of the instrument, not evidence against the hypothesis.</p>
+        </div>
+        <div class="ai-limit">
+          <h3>Controls we identify as required and do not yet report</h3>
+          <p>A random-candidate control, a placebo-tool arm with affordance-sounding names over grip-quality argmax,
+            a controlled feasibility-gate run varying only the gate, and a visual-prompting baseline in the MOKA and
+            CoPa style over an identical candidate set, reported with its fallback rate.</p>
+        </div>
+        <div class="ai-limit">
+          <h3>No real-robot study</h3>
+          <p>All results are in simulation. The layer emits 6-DoF poses against a frozen detector and a standard IK
+            solver, so the interface transfers unchanged, but nothing here measures the sim-to-real gap in the
+            detector or the executor, and we make no claim about it.</p>
+        </div>
+      </div>
+
+      <figure class="ai-figure">
+        <img src="static/images/headroom.png" class="ai-zoomable"
+             alt="Scatter plot of placement headroom against the detected L3 minus L2 effect across nine regimes, showing that only assembly satisfies both conditions and only assembly registers the effect">
+        <figcaption>
+          <strong>The headroom diagnostic, as it appears in the paper.</strong> Headroom is necessary and not
+          sufficient: several regimes with ample headroom still fail to register the effect because the scripted
+          executor floors placement regardless of grasp. Only assembly satisfies both conditions, and only assembly
+          shows the effect.
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- BibTeX -->
+  <section class="section hero is-light" id="bibtex">
+    <div class="container is-max-desktop content">
+      <div class="bibtex-header">
+        <h2 class="title">BibTeX</h2>
+        <button class="copy-bibtex-btn" onclick="copyBibTeX()" title="Copy BibTeX to clipboard">
+          <i class="fas fa-copy"></i>
+          <span class="copy-text">Copy</span>
+        </button>
+      </div>
+      <pre id="bibtex-code"><code>@misc{sarowar2027affordx,
+title  = {Affordance-Grounded Coding Agents are Robust Where Vision-Language-Action Policies Fail},
+author = {Md Selim Sarowar and Sungho Kim},
+year   = {2027},
+note   = {In preparation},
+url    = {https://physical-agi.github.io/AFFORD-X/}
+}</code></pre>
+      <p class="ai-table-note">
+        Placeholder entry. It will be replaced with the proceedings entry once the paper is accepted.
+      </p>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="content has-text-centered">
+        <p>
+          AFFORD-X builds on <a href="https://github.com/capgym/cap-x" target="_blank" rel="noopener">CaP-X / CaP-Agent0</a>
+          and re-ranks the candidates of a frozen
+          <a href="https://github.com/NVlabs/contact_graspnet" target="_blank" rel="noopener">Contact-GraspNet</a>.
+          Code at <a href="https://github.com/Physical-AGI/AFFORD-X" target="_blank" rel="noopener">Physical-AGI/AFFORD-X</a>.
+        </p>
+        <p>
+          Page template adapted from <a href="https://nerfies.github.io" target="_blank" rel="noopener">Nerfies</a>,
+          licensed under <a href="http://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>.
+        </p>
+      </div>
+    </div>
+  </footer>
+</main>
+
+<!-- Scroll to top -->
+<button class="scroll-to-top" onclick="scrollToTop()" aria-label="Scroll back to top">
+  <i class="fas fa-arrow-up"></i>
+</button>
+
+<!-- Lightbox -->
+<div class="ai-lightbox" id="ai-lightbox" role="dialog" aria-modal="true" aria-label="Enlarged figure">
+  <button class="ai-lightbox-close" id="ai-lightbox-close" aria-label="Close">&times;</button>
+  <img id="ai-lightbox-img" src="" alt="">
+  <p class="ai-lightbox-caption" id="ai-lightbox-caption"></p>
+</div>
+
+</body>
+</html>
