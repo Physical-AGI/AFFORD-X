@@ -23,11 +23,6 @@
 .ax-pair em { color: var(--text-secondary); font-style: normal; font-variant-numeric: tabular-nums; }
 .ax-pair.is-clear { border-color: #B9A6E0; background: #F6F2FC; }
 
-.ax-go { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.3rem; }
-.ax-go-chip { font-size: 0.78rem; padding: 0.15rem 0.55rem; border-radius: 999px; border: 1px solid; cursor: help; }
-.ax-go-chip.is-go { color: #0B6B53; border-color: #7CC7B2; background: #EAF7F2; }
-.ax-go-chip.is-nogo { color: #9A3A0F; border-color: #EDB08F; background: #FDF1EA; }
-
 .ax-video-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; margin-top: 2rem; }
 @media (max-width: 700px) { .ax-video-grid { grid-template-columns: 1fr; } }
 .ax-video { margin: 0; }

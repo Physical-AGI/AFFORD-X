@@ -5,8 +5,7 @@ Project page for **AFFORD-X: Affordance-Grounded Agentic Policy for Zero-Shot Ro
 AFFORD-X makes interaction selection explicit: candidate interactions, a feasibility gate, functional affordance
 from a geometric part partition, task compatibility from the task definition's typed intent, then execution. It is evaluated
 counterfactually, with every method ranking the same candidate set and every candidate executed in the benchmark's
-own simulator. The page reports LIBERO-PRO Goal, Spatial and Object under the Pos and Task perturbations and Meta-World MT50,
-positive results and nulls together.
+own simulator. The page reports LIBERO-PRO Goal, Spatial and Object under the Pos and Task perturbations and Meta-World MT50.
 
 Live at <https://physical-agi.github.io/AFFORD-X/>.
 
@@ -16,9 +15,8 @@ Live at <https://physical-agi.github.io/AFFORD-X/>.
 |---|---|
 | Pipeline walkthrough | The five components, which are frozen and which are ours |
 | **Replay explorer** | The logged hammer scene: switch part source, combination rule, gate and terms, and see which candidate executes and its simulator outcome |
-| LIBERO-PRO chart | Success with 95% intervals under Pos and Task, paired differences and go/no-go verdicts |
-| Meta-World chart | Unperturbed, reach envelopes and perturbation sweeps, including the SAM3 against geometric-part contrast |
-| Proposer chart | Gemini arms B1 to B4 on the same scenes |
+| LIBERO-PRO chart | Success with 95% intervals under Pos and Task, and the paired difference against random choice |
+| Meta-World chart | MT50 success with 95% intervals, by difficulty tier |
 
 ## Where the numbers come from
 

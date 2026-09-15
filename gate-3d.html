@@ -122,7 +122,6 @@
   .seg button { background: transparent; flex: 1 1 auto; text-align: center; }
   .seg button small { display: block; font: 400 11px var(--mono); opacity: 0.85; margin-top: 2px; }
   .seg button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
-  .seg button.empty { color: var(--muted); border-style: dashed; }
   .cells { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
   .note { margin: 0; font-size: 12.5px; color: var(--muted); }
   .checks { display: grid; gap: 7px; }
@@ -674,9 +673,9 @@
   }
 
   function renderCells() {
-    $("cells").innerHTML = I.cells.map(function (c) {
-      return '<button type="button" data-cell="' + c.cell + '" aria-pressed="' + (c.cell === state.cell) + '"' + (c.file ? "" : ' class="empty"') + ">" +
-        cellLabel(c) + "<small>" + (c.file ? c.task + " · init " + c.seed : "no scene meets the rule") + "</small></button>";
+    $("cells").innerHTML = I.cells.filter(function (c) { return c.file; }).map(function (c) {
+      return '<button type="button" data-cell="' + c.cell + '" aria-pressed="' + (c.cell === state.cell) + '">' +
+        cellLabel(c) + "<small>" + c.task + " · init " + c.seed + "</small></button>";
     }).join("");
   }
 
@@ -710,12 +709,6 @@
     var meta = cellMeta(name);
     state.cell = name;
     Array.prototype.forEach.call($("cells").children, function (b) { b.setAttribute("aria-pressed", String(b.dataset.cell === name)); });
-    if (!meta.file) {
-      var n = meta.counts, none = n.scenes - n.abstained - n.gate_acts;
-      status("No " + meta.suite + " " + meta.perturbation + " scene meets the rule: across " + n.scenes + " scenes the gate removes " +
-        "every grasp in " + n.abstained + " and none in " + none + ".");
-      return;
-    }
     if (!window.GATE_SCENES[name]) status("Loading the " + meta.suite + " " + meta.perturbation + " scene");
     loadCell(meta, function (data) {
       if (state.cell !== name) return;

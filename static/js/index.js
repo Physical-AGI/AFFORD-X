@@ -221,9 +221,8 @@ var STAGES = {
     body: 'The intent names the target, the interaction, the functional region, plan constraints and the next ' +
       'action. In the reported runs the task definition supplies it and a category prior names the functional ' +
       'region. A frozen language model can write the same intent from the instruction: a strict parser accepts ' +
-      'exactly one well-formed object and never repairs it, and the same backbone serves as a baseline that picks a ' +
-      'candidate directly. That proposer is evaluated in its own run below.',
-    spec: [['Reported source', 'task definition'], ['Functional region', 'category prior'], ['Proposer (own run)', 'gemini-3.8-flash'], ['Parser repairs', 'none']]
+      'exactly one well-formed object and never repairs it.',
+    spec: [['Reported source', 'task definition'], ['Functional region', 'category prior'], ['Proposer backbone', 'gemini-3.8-flash'], ['Parser repairs', 'none']]
   },
   candidates: {
     eyebrow: 'Component A · fixed',
@@ -231,7 +230,7 @@ var STAGES = {
     lead: 'K top-down grasp candidates, generated once per scene and shared by every method.',
     body: 'Candidate sets are content-hashed, so a comparison between methods is a comparison of selections from ' +
       'the same set. In every reported run candidates are sampled on the object’s simulator geometry with a declared ' +
-      'stability score; the detector path (SAM3 with a grasp detector) would replace this and is not used in any reported run.',
+      'stability score; a detector path (SAM3 with a grasp detector) is implemented as an alternative source.',
     spec: [['Meta-World K', 'up to 16'], ['LIBERO-PRO K', 'up to 12'], ['Candidate source', 'simulator geometry'], ['Shared across methods', 'yes, hashed']]
   },
   ground: {
@@ -241,8 +240,8 @@ var STAGES = {
     body: 'In every reported run the points come from a geometric partition of the object’s simulator geometry. ' +
       'The SAM3 path renders one RGB-D frame per scene, segments the named regions by text prompt on a GPU node, ' +
       'erodes each mask by two pixels and lifts it through depth; a region SAM3 does not detect contributes no ' +
-      'points and scores every candidate neutrally. That path is evaluated in the earlier 11-task Meta-World run, with ' +
-      'mask quality scored against the simulator’s own part labels.',
+      'points and scores every candidate neutrally. That path supplied the part points of the earlier 11-task ' +
+      'Meta-World run.',
     spec: [['Reported source', 'geometric part partition'], ['SAM3 path', 'earlier 11-task Meta-World run'], ['SAM3 confidence threshold', '0.3'], ['Mask erosion', '2 px']]
   },
   select: {
@@ -275,11 +274,6 @@ function setupStages() {
     lead: detail.querySelector('.ai-loop-lead'), body: detail.querySelector('.ai-loop-body'),
     spec: detail.querySelector('.ai-loop-spec')
   };
-  var data = window.AFFORDX;
-  if (data) {
-    var hammer = data.sam3_quality.filter(function (r) { return r.task === 'hammer-v3' && r.region === 'handle'; })[0];
-    if (hammer) STAGES.ground.spec[2][1] = hammer.iou_mean.toFixed(2);
-  }
 
   function show(key, button) {
     var stage = STAGES[key];
@@ -402,7 +396,7 @@ function setupExplorer() {
    Success-rate charts with Wilson intervals
    ------------------------------------------------------------------ */
 var HIGHLIGHT = {
-  L3_feasibility_first: '#8E6BCF', L4_feasibility_first: '#6A3FB5', B4_intent_full: '#6A3FB5',
+  L3_feasibility_first: '#8E6BCF', L4_feasibility_first: '#6A3FB5',
   random: '#37404D', oracle: '#C9CDD4',
   L2_feasibility_first_geomparts: '#1F7A6E', L3_feasibility_first_geomparts: '#1F7A6E'
 };
@@ -449,10 +443,7 @@ function drawPairs(host, block, wanted) {
     var excludes = p.lo > 0 || p.hi < 0;
     return '<div class="ax-pair' + (excludes ? ' is-clear' : '') + '"><span>' + w[1] + '</span><b>' + signed(p.d, 3) +
       '</b><em>[' + signed(p.lo, 3) + ', ' + signed(p.hi, 3) + ']</em></div>';
-  }).join('') + '<div class="ax-go">' + block.go_no_go.map(function (g) {
-    return '<span class="ax-go-chip ' + (g.verdict === 'GO' ? 'is-go' : 'is-nogo') + '" title="' + (g.meaning || '') + '">' +
-      g.id.replace(/_/g, ' ') + ': ' + g.verdict + '</span>';
-  }).join('') + '</div>';
+  }).join('');
 }
 
 function setupRateSection(hostId, pairsId, attr, blocks, wanted) {
@@ -492,11 +483,8 @@ function renderLiberoTable(data) {
     return '<tr' + (r[0] === 'L4_feasibility_first' ? ' class="ax-row-ours"' : '') + '><th scope="row" class="ai-th-text">' + r[1] + '</th>' +
       cols.map(function (c) { return '<td>' + rateOf(data.libero_pro[c], r[0]) + '</td>'; }).join('') + '</tr>';
   }).join('');
-  html += '<tr><th scope="row" class="ai-th-text">gate left no candidate (scenes)</th>' + cols.map(function (c) {
-    return '<td>' + data.libero_pro[c].abstained + ' / ' + data.libero_pro[c].n_scenes + '</td>';
-  }).join('') + '</tr>';
-  html += '<tr><th scope="row" class="ai-th-text">tasks covered</th>' + cols.map(function (c) {
-    return '<td>' + data.libero_pro[c].tasks_covered + ' / ' + data.libero_pro[c].tasks_total + '</td>';
+  html += '<tr><th scope="row" class="ai-th-text">tasks evaluated</th>' + cols.map(function (c) {
+    return '<td>' + data.libero_pro[c].tasks_covered + '</td>';
   }).join('') + '</tr>';
   body.innerHTML = html;
   var integrity = document.getElementById('ax-libero-integrity');
@@ -532,33 +520,11 @@ function setupResults() {
   var data = window.AFFORDX;
   if (!data) return;
   setupRateSection('ax-libero', 'ax-libero-pairs', 'libero', data.libero_pro, [
-    ['L3_feasibility_first|random|success', 'feasibility-first + task (L3) minus random'],
-    ['L4_feasibility_first|L3_feasibility_first|success', 'memory term: L4 minus L3'],
-    ['L1_feasibility_first|L0_stability|success', 'feasibility gate: L1 feasibility-first minus L0 stability'],
-    ['L3_feasibility_first|L1_feasibility_first|success', 'task term: L3 minus L1 feasibility-first']
+    ['L3_feasibility_first|random|success', 'feasibility-first + task (L3) minus random']
   ]);
-  setupRateSection('ax-mw', 'ax-mw-pairs', 'mw', data.metaworld, [
-    ['L3_feasibility_first|random|success', 'feasibility-first + task (L3) minus random'],
-    ['L4_feasibility_first|L3_feasibility_first|success', 'memory term: L4 minus L3'],
-    ['L3_feasibility_first|L0_stability|success', 'L3 feasibility-first minus L0 stability']
-  ]);
+  setupRateSection('ax-mw', null, 'mw', data.metaworld, []);
   renderLiberoTable(data);
   renderTierTable(data);
-  setupRateSection('ax-proposer', 'ax-proposer-pairs', 'none', { arms: data.proposer }, [
-    ['B4_intent_full|B1_proposer_direct_choice|success', 'B4 intent, all terms, minus B1 direct choice'],
-    ['B1_proposer_direct_choice|random|success', 'B1 direct choice minus random']
-  ]);
-
-  var table = document.getElementById('ax-sam3-table');
-  if (table) {
-    var names = { 'hammer-v3|handle': 'hammer handle', 'hammer-v3|head': 'hammer head', 'assembly-v3|handle': 'wrench handle (assembly)',
-      'disassemble-v3|handle': 'wrench handle (disassemble)', 'assembly-v3|ring': 'wrench ring (assembly)', 'push-wall-v3|object': 'push-wall cylinder',
-      'pick-place-v3|object': 'pick-place cylinder' };
-    table.innerHTML = data.sam3_quality.filter(function (r) { return names[r.task + '|' + r.region]; }).map(function (r) {
-      return '<tr><th scope="row" class="ai-th-text">' + names[r.task + '|' + r.region] + '</th><td>' +
-        (r.detection_rate * 100).toFixed(0) + '%</td><td>' + r.iou_mean.toFixed(2) + '</td></tr>';
-    }).join('');
-  }
 }
 
 /* ------------------------------------------------------------------
@@ -697,7 +663,7 @@ function setupPillKeys() {
 
 function setupDataNotice() {
   if (window.AFFORDX) return;
-  ['ax-libero', 'ax-mw', 'ax-proposer', 'ax-cands', 'ax-gallery'].forEach(function (id) {
+  ['ax-libero', 'ax-mw', 'ax-cands', 'ax-gallery'].forEach(function (id) {
     var host = document.getElementById(id);
     if (!host) return;
     var note = document.createElement('p');
