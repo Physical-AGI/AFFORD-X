@@ -567,8 +567,7 @@
       $("instruction").textContent = E.instruction ? "“" + E.instruction + "”" : "";
       renderLegend(); renderPhases();
       buildEpisode();
-      var grasp = E.marks.filter(function (m) { return m.label === "grasp"; })[0];
-      setFrame(grasp ? grasp.index : 0);
+      setFrame(0);
       $("play").textContent = "Play";
       setView("orbit");
     });
