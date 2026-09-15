@@ -716,7 +716,8 @@ function fitEmbed(frame) {
   function fit() {
     try {
       var doc = frame.contentDocument;
-      if (doc && doc.body) frame.style.height = doc.documentElement.scrollHeight + 'px';
+      /* The body's own height: the document's scroll height never drops below the iframe's current height. */
+      if (doc && doc.body) frame.style.height = Math.ceil(doc.body.getBoundingClientRect().height) + 'px';
     } catch (err) {
       /* A cross-origin preview keeps the stylesheet height. */
     }
