@@ -3,9 +3,9 @@
 Project page for **AFFORD-X: Affordance-Grounded Agentic Policy for Zero-Shot Robot Manipulation**.
 
 AFFORD-X makes interaction selection explicit: candidate interactions, a feasibility gate, functional affordance
-grounded with SAM3, task compatibility from a semantic proposer's typed intent, then execution. It is evaluated
+from a geometric part partition, task compatibility from the task definition's typed intent, then execution. It is evaluated
 counterfactually, with every method ranking the same candidate set and every candidate executed in the benchmark's
-own simulator. The page reports the pilot phase: LIBERO-PRO Spatial (Pos and Task) and an 11-task Meta-World suite,
+own simulator. The page reports LIBERO-PRO Goal, Spatial and Object under the Pos and Task perturbations and Meta-World MT50,
 positive results and nulls together.
 
 Live at <https://physical-agi.github.io/AFFORD-X/>.

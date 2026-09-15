@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Handle points in 3D for the hammer and wrench pilot scenes: the geometric partition and SAM3 masks lifted through depth, and the functional score each gives every grasp candidate.">
+<meta name="description" content="Handle points in 3D for the hammer and wrench scenes: the geometric partition and SAM3 masks lifted through depth, and the functional score each gives every grasp candidate.">
 <link rel="icon" type="image/png" href="static/images/robot.png">
 <title>Handle Points in 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -174,7 +174,7 @@
   <header class="top">
     <div>
       <a class="back" href="./#handle-points" target="_top">AFFORD-X project page</a>
-      <p class="kicker" id="kicker">Meta-World pilot scenes</p>
+      <p class="kicker" id="kicker">Meta-World scenes</p>
       <h1>Handle Points in 3D</h1>
     </div>
     <p class="lede">
@@ -246,7 +246,7 @@
         <h2>Handle points from</h2>
         <div class="seg" id="sources">
           <button type="button" data-src="geometric" aria-pressed="true">Geometric partition<small>reported results</small></button>
-          <button type="button" data-src="sam3" aria-pressed="false">SAM3 through depth<small>earlier pilot</small></button>
+          <button type="button" data-src="sam3" aria-pressed="false">SAM3 through depth<small>earlier 11-task run</small></button>
         </div>
         <p class="note" id="source-note"></p>
       </div>
@@ -667,7 +667,7 @@
     $("compare").innerHTML =
       "<thead><tr><th></th>" +
       '<th class="num' + (state.src === "geometric" ? " on" : "") + '" data-src="geometric" tabindex="0">Geometric<small>reported</small></th>' +
-      '<th class="num' + (state.src === "sam3" ? " on" : "") + '" data-src="sam3" tabindex="0">SAM3<small>pilot</small></th></tr></thead><tbody>' +
+      '<th class="num' + (state.src === "sam3" ? " on" : "") + '" data-src="sam3" tabindex="0">SAM3<small>11-task run</small></th></tr></thead><tbody>' +
       row("Handle points", g.points.toLocaleString("en-US"), s.points.toLocaleString("en-US")) +
       row("Mean f, handle grasps (" + g.nHandle + ")", num(g.handleMean, 2), num(s.handleMean, 2)) +
       row("Mean f, " + T.other + " grasps (" + g.nOther + ")", num(g.otherMean, 2), num(s.otherMean, 2)) +
@@ -836,8 +836,8 @@
   if (!has3D) { ["view-camera", "view-orbit", "view-top"].forEach(function (id) { $(id).hidden = true; }); }
 
   $("note-scope").textContent = "Every reported result takes handle points from the geometric partition of the simulator's object cloud. " +
-    "The SAM3 source ran in the earlier 11-task Meta-World pilot, where the task term kept the geometric partition. " +
-    "Only the hammer and the wrench have a handle region among the pilot objects. Both functional scores shown here are " +
+    "The SAM3 source ran in the earlier 11-task Meta-World run, where the task term kept the geometric partition. " +
+    "Only the hammer and the wrench have a handle region among the eleven objects of that run. Both functional scores shown here are " +
     "recomputed from the points and match the run log.";
 
   var mq = window.matchMedia("(prefers-color-scheme: dark)");

@@ -222,17 +222,17 @@ var STAGES = {
       'action. In the reported runs the task definition supplies it and a category prior names the functional ' +
       'region. A frozen language model can write the same intent from the instruction: a strict parser accepts ' +
       'exactly one well-formed object and never repairs it, and the same backbone serves as a baseline that picks a ' +
-      'candidate directly. That proposer is evaluated in its own pilot below.',
-    spec: [['Reported source', 'task definition'], ['Functional region', 'category prior'], ['Proposer (own pilot)', 'gemini-3.8-flash'], ['Parser repairs', 'none']]
+      'candidate directly. That proposer is evaluated in its own run below.',
+    spec: [['Reported source', 'task definition'], ['Functional region', 'category prior'], ['Proposer (own run)', 'gemini-3.8-flash'], ['Parser repairs', 'none']]
   },
   candidates: {
     eyebrow: 'Component A · fixed',
     title: 'Candidate interactions',
     lead: 'K top-down grasp candidates, generated once per scene and shared by every method.',
     body: 'Candidate sets are content-hashed, so a comparison between methods is a comparison of selections from ' +
-      'the same set. In the pilot phase candidates are sampled on the object’s simulator geometry with a declared ' +
-      'stability score; the detector path (SAM3 with a grasp detector) replaces this in the full phase.',
-    spec: [['Meta-World K', 'up to 16'], ['LIBERO-PRO K', 'up to 12'], ['Pilot source', 'simulator geometry'], ['Shared across methods', 'yes, hashed']]
+      'the same set. In every reported run candidates are sampled on the object’s simulator geometry with a declared ' +
+      'stability score; the detector path (SAM3 with a grasp detector) would replace this and is not used in any reported run.',
+    spec: [['Meta-World K', 'up to 16'], ['LIBERO-PRO K', 'up to 12'], ['Candidate source', 'simulator geometry'], ['Shared across methods', 'yes, hashed']]
   },
   ground: {
     eyebrow: 'Component D',
@@ -241,9 +241,9 @@ var STAGES = {
     body: 'In every reported run the points come from a geometric partition of the object’s simulator geometry. ' +
       'The SAM3 path renders one RGB-D frame per scene, segments the named regions by text prompt on a GPU node, ' +
       'erodes each mask by two pixels and lifts it through depth; a region SAM3 does not detect contributes no ' +
-      'points and scores every candidate neutrally. That path is evaluated in the earlier Meta-World pilot, with ' +
+      'points and scores every candidate neutrally. That path is evaluated in the earlier 11-task Meta-World run, with ' +
       'mask quality scored against the simulator’s own part labels.',
-    spec: [['Reported source', 'geometric part partition'], ['SAM3 path', 'earlier Meta-World pilot'], ['SAM3 confidence threshold', '0.3'], ['Mask erosion', '2 px']]
+    spec: [['Reported source', 'geometric part partition'], ['SAM3 path', 'earlier 11-task Meta-World run'], ['SAM3 confidence threshold', '0.3'], ['Mask erosion', '2 px']]
   },
   select: {
     eyebrow: 'Component F · ours',
@@ -707,10 +707,12 @@ function setupDataNotice() {
   });
 }
 
-/* The handle-points viewer is same-origin, so its iframe takes the height of its content. */
+/* The embedded viewers are same-origin, so each iframe takes the height of its content. */
 function setupEmbeds() {
-  var frame = document.getElementById('ax-handle-points');
-  if (!frame) return;
+  Array.prototype.forEach.call(document.querySelectorAll('.ax-embed iframe'), fitEmbed);
+}
+
+function fitEmbed(frame) {
   function fit() {
     try {
       var doc = frame.contentDocument;

@@ -6,7 +6,7 @@
 
   <!-- Primary Meta Tags -->
   <meta name="title" content="AFFORD-X: Affordance-Grounded Agentic Policy for Zero-Shot Robot Manipulation">
-  <meta name="description" content="AFFORD-X makes interaction selection explicit: candidate interactions, a feasibility gate, functional affordance and task compatibility, then execution. Pilot evidence on four LIBERO-PRO suites under the Pos and Task perturbations and on Meta-World MT50, with every null reported.">
+  <meta name="description" content="AFFORD-X makes interaction selection explicit: candidate interactions, a feasibility gate, functional affordance and task compatibility, then execution. Evidence on four LIBERO-PRO suites under the Pos and Task perturbations and on Meta-World MT50, with every null reported.">
   <meta name="keywords" content="robot manipulation, affordance grounding, interaction selection, feasibility, SAM3, Gemini, zero-shot, LIBERO-PRO, Meta-World, counterfactual evaluation">
   <meta name="robots" content="index, follow">
   <meta name="language" content="English">
@@ -15,10 +15,10 @@
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="article">
   <meta property="og:title" content="AFFORD-X: Affordance-Grounded Agentic Policy for Zero-Shot Robot Manipulation">
-  <meta property="og:description" content="Remove what the arm cannot execute, then rank by function and task. Counterfactual evaluation on identical candidate sets, pilot results with nulls, rollout videos.">
+  <meta property="og:description" content="Remove what the arm cannot execute, then rank by function and task. Counterfactual evaluation on identical candidate sets, results with nulls, rollout videos.">
   <meta property="og:url" content="https://physical-agi.github.io/AFFORD-X/">
   <meta property="og:image" content="https://physical-agi.github.io/AFFORD-X/static/images/method_framework.png">
-  <meta property="og:image:alt" content="The AFFORD-X framework drawn on one pilot scene: instruction and RGB-D observations of the same task, task-definition intent and candidate generator, geometric part terms, feasibility-first selection and successful rollout keyframes; the Gemini proposer and SAM3 grounding are drawn hatched as implemented but in no reported result">
+  <meta property="og:image:alt" content="The AFFORD-X framework drawn on one Meta-World scene: instruction and RGB-D observations of the same task, task-definition intent and candidate generator, geometric part terms, feasibility-first selection and successful rollout keyframes; the Gemini proposer and SAM3 grounding are drawn hatched as implemented but in no reported result">
   <meta property="article:section" content="Robotics">
   <meta property="article:tag" content="robot manipulation">
   <meta property="article:tag" content="affordance">
@@ -27,7 +27,7 @@
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="AFFORD-X: Affordance-Grounded Agentic Policy for Zero-Shot Robot Manipulation">
-  <meta name="twitter:description" content="Feasibility-first interaction selection, evaluated counterfactually on identical candidates. Pilot phase, nulls included.">
+  <meta name="twitter:description" content="Feasibility-first interaction selection, evaluated counterfactually on identical candidates. Nulls included.">
   <meta name="twitter:image" content="https://physical-agi.github.io/AFFORD-X/static/images/method_framework.png">
   <meta name="twitter:image:alt" content="The AFFORD-X framework diagram">
 
@@ -104,6 +104,8 @@
       <a href="#replay">Replay</a>
       <a href="#qualitative">Qualitative</a>
       <a href="#libero">LIBERO-PRO</a>
+      <a href="#gate-3d">Gate in 3D</a>
+      <a href="#rollouts-4d">4D rollouts</a>
       <a href="#metaworld">Meta-World</a>
       <a href="#proposer">Proposer</a>
       <a href="#handle-points">Handle points</a>
@@ -167,8 +169,7 @@
                 </span>
               </div>
               <p class="ai-anon-note">
-                Zero-shot: no demonstrations, no reward and no gradient steps. The evidence below is from the pilot
-                phase (updated 15 September 2026); the full benchmark follows only where the pilot justifies it.
+                Zero-shot: no demonstrations, no reward and no gradient steps. Every reported result below is a single run at seed 0 (updated 15 September 2026).
               </p>
             </div>
           </div>
@@ -185,7 +186,7 @@
           <img src="static/images/method_framework.png" class="ai-zoomable"
                alt="The AFFORD-X framework on the Meta-World hammer scene: a language instruction and stacked RGB-D observations of the same task; solid components are in the reported configuration (task-definition intent, top-down grasp candidates on object geometry, geometric part partition, feasibility-first rule), hatched grey components (Gemini proposer, SAM3 grounding) are implemented but in no reported result; and recorded successful executions on Meta-World and LIBERO-PRO Spatial and Object">
           <figcaption>
-            <strong>AFFORD-X on one pilot scene</strong> (Meta-World hammer, seed 0), scored with the reported
+            <strong>AFFORD-X on one scene</strong> (Meta-World hammer, seed 0), scored with the reported
             configuration. <strong>Solid</strong> components are in every reported result: the intent comes from the task
             definition, 16 top-down grasp candidates are generated on simulator object geometry, the functional term uses a
             geometric part partition, and the feasibility-first rule selects. <strong>Hatched grey</strong> components and
@@ -237,17 +238,17 @@
               action, and a <strong>feasibility-first</strong> rule removes candidate interactions the embodiment cannot
               execute before functional affordance and task compatibility rank the rest. In every reported run the intent
               comes from the task definition and the parts from a geometric partition; a semantic proposer (Gemini 3.8
-              Flash) and SAM3 part grounding are implemented and evaluated in separate pilots. No module is trained. Evaluation is counterfactual: every compared method
+              Flash) and SAM3 part grounding are implemented and evaluated in separate runs. No module is trained. Evaluation is counterfactual: every compared method
               ranks the same content-hashed candidate set, and every candidate is executed from the identical start
               state in the benchmark's own simulator, so a success difference is a difference in the selected
-              interaction. In the pilot phase with a 7-DoF Franka on LIBERO-PRO under the position and task
+              interaction. With a 7-DoF Franka on LIBERO-PRO under the position and task
               perturbations, the full decision layer succeeds in 0.57 and 0.38 of LIBERO-Goal scenes, 0.92 and 0.96 of
               LIBERO-Spatial scenes and every LIBERO-Object scene, above random choice among the same candidates in all
               six reported cells (10 initial states per task; LIBERO-10 is not reported because the scripted executor
               supports one of its ten tasks). Those runs read object geometry and the goal from simulator state, so they
               bound the selection layer and are not comparable with policy results on the LIBERO-PRO leaderboard. On the
               50 Meta-World MT50 tasks with a 4-DoF Sawyer, the same layer reaches 0.44 against 0.40 for random choice
-              and a 0.82 best-candidate ceiling, which misses its declared bar, and an earlier 11-task pilot found that
+              and a 0.82 best-candidate ceiling, which misses its declared bar, and an earlier 11-task Meta-World run found that
               SAM3 part grounding lowers functional-part selection against a geometric partition. We report every null
               beside the positive results, with go/no-go rules declared before each run, paired bootstrap intervals and
               rollout videos recorded during evaluation.
@@ -334,14 +335,14 @@
           <div class="ai-note">
             <h3>Where the region comes from</h3>
             <p>A category prior names the handle for handled tools and containers, and it is the region source in every
-              reported run. The semantic proposer's intent can name any region and is evaluated in its own pilot. Objects
+              reported run. The semantic proposer's intent can name any region and is evaluated in its own run. Objects
               without a named region score every candidate neutrally.</p>
           </div>
           <div class="ai-note">
             <h3>Where the points come from</h3>
             <p><code>grasp_region:&lt;part&gt;</code> scores 1.0 within 3&nbsp;cm of the part's points, falling to 0 at
               8&nbsp;cm. The reported runs take the part points from a geometric partition of the object cloud; the
-              earlier Meta-World pilot took them from SAM3 masks and shows why this distinction matters.</p>
+              earlier 11-task Meta-World run took them from SAM3 masks and shows why this distinction matters.</p>
           </div>
         </div>
       </div>
@@ -461,14 +462,14 @@
             Bars are each candidate's final score, normalised to the selected one; gated candidates score zero. Worth
             trying: with <strong>SAM3 masks</strong>, switch the <strong>task term off</strong> and a head grasp is
             selected, because SAM3's handle points reach the head and the stability term peaks there. Switch the part
-            source to <strong>geometric</strong> and the handle comes back. This is the Meta-World pilot's SAM3 result
+            source to <strong>geometric</strong> and the handle comes back. This is the SAM3 result of the earlier 11-task Meta-World run
             in one scene.
           </p>
         </div>
       </div>
       <p class="ai-table-note">
         <strong>What this is.</strong> Logged data, not a worked example. Terms and outcomes are read from the
-        SAM3-grounded pilot run; each selection was computed with the engine's decision specs and checked against the
+        SAM3-grounded 11-task run; each selection was computed with the engine's decision specs and checked against the
         selections that run recorded. Stability and simulator outcomes never enter the gate.
       </p>
     </div>
@@ -580,6 +581,52 @@
     </div>
   </section>
 
+  <!-- Feasibility gate in 3D -->
+  <section class="section" id="gate-3d">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3 has-text-centered">The Feasibility Gate in 3D</h2>
+      <p class="ai-section-intro">
+        On LIBERO-PRO the gate keeps a grasp when reach &times; approach &times; collision is at least 0.5, and reach drops to
+        0.1 outside the Franka workspace, a box fixed to the robot base (x &minus;0.10 to 0.75&nbsp;m, y &minus;0.50 to
+        0.50&nbsp;m, z 0.005 to 0.90&nbsp;m). Each cell shows one scene, chosen before looking at outcomes as the first in
+        task and initial-state order where the gate removes some grasps and keeps others.
+      </p>
+      <div class="ax-embed">
+        <iframe id="ax-gate-3d" src="gate-3d.html" title="Feasibility gate in 3D" loading="lazy"></iframe>
+      </div>
+      <p class="ai-table-note">
+        In the five scenes the gate removes 2 to 7 of 12 grasps, and 27 of the 28 removals lie outside the workspace; the
+        one removed inside it, in LIBERO-Spatial Pos, has a collision term of 0.497. The gate removes some grasps in 41 of
+        80 Goal Pos, 99 of 100 Spatial Pos, 80 of 80 Spatial Task, 30 of 100 Object Pos and 10 of 100 Object Task scenes.
+        No LIBERO-Goal Task scene meets the rule: the gate removes every grasp in 50 of its 80 scenes and none in the other
+        30. <a href="gate-3d.html">Open the viewer on its own page</a>.
+      </p>
+    </div>
+  </section>
+
+  <!-- Rollouts in 4D -->
+  <section class="section" id="rollouts-4d">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3 has-text-centered">Rollouts in 4D</h2>
+      <p class="ai-section-intro">
+        One recorded AFFORD-X rollout per benchmark, replayed from the same reset with a depth camera. SAM3 tracks the
+        object through every frame, each mask is lifted through that frame's depth, and the gripper and arm come from the
+        simulator's geometry map. This is a visualization: no reported result reads these frames.
+      </p>
+      <div class="ax-embed">
+        <iframe id="ax-rollouts-4d" src="rollouts-4d.html" title="Rollouts in 4D" loading="lazy"></iframe>
+      </div>
+      <p class="ai-table-note">
+        Meta-World MT50 hammer-v3, episode 0, and LIBERO-PRO Object under the position perturbation, libero_object:2 at
+        initial state 0; both replays reproduce the run's outcome and step count. SAM3's video predictor is prompted once,
+        on the first frame. Against the simulator's object mask its IoU is at least 0.64 in all 186 hammer frames (median
+        0.91) and at least 0.68 in all 49 bottle frames (median 0.90). The bottle prompt, &ldquo;bottle with a
+        label&rdquo;, was chosen on two frames against the simulator mask, because &ldquo;salad dressing&rdquo; finds
+        nothing. <a href="rollouts-4d.html">Open the viewer on its own page</a>.
+      </p>
+    </div>
+  </section>
+
   <!-- Meta-World -->
   <section class="section" id="metaworld">
     <div class="container is-max-desktop">
@@ -600,14 +647,14 @@
       </div>
 
       <div class="ax-callout is-null">
-        <strong>Pilot verdict: not justified in its current form.</strong> The full layer reaches 0.44 against 0.40 for
+        <strong>Verdict: not justified in its current form.</strong> The full layer reaches 0.44 against 0.40 for
         random choice among the same candidates, and both declared selection rules are NO-GO. The headroom is large:
         the best candidate succeeds in 0.82 of episodes, and in 188 of 250 scenes some candidates succeed while others
         fail. Four tasks (handle-pull, handle-pull-side, peg-unplug-side, pick-out-of-hole) have no successful
         candidate for this executor.
       </div>
 
-      <h3 class="title is-4 has-text-centered" style="margin-top:2.5rem">Earlier 11-task pilot: SAM3 finds the parts, the score cannot separate them</h3>
+      <h3 class="title is-4 has-text-centered" style="margin-top:2.5rem">Earlier 11-task run: SAM3 finds the parts, the score cannot separate them</h3>
       <div class="columns is-vcentered">
         <div class="column is-7">
           <figure class="ai-figure" style="margin-top:0">
@@ -661,8 +708,7 @@
     <div class="container is-max-desktop">
       <h2 class="title is-3 has-text-centered">The Semantic Proposer</h2>
       <p class="ai-section-intro">
-        Gemini 3.8 Flash with high reasoning effort, one backbone for every arm, on the 55 unperturbed Meta-World pilot
-        scenes. B1 picks a candidate directly; B2 to B4 use its typed intent inside the decision layer.
+        Gemini 3.8 Flash with high reasoning effort, one backbone for every arm, on the 55 unperturbed scenes of the earlier 11-task Meta-World run. B1 picks a candidate directly; B2 to B4 use its typed intent inside the decision layer.
       </p>
       <div class="ax-chart-card ax-chart-host" id="ax-proposer"></div>
       <div class="ax-pairs" id="ax-proposer-pairs"></div>
@@ -682,7 +728,7 @@
       <p class="ai-section-intro">
         The functional term scores a grasp by its distance to the nearest handle point: 1 within 3&nbsp;cm, falling to 0
         at 8&nbsp;cm. Every reported result takes those points from a geometric partition of the simulator's object
-        cloud; the earlier pilot took them from SAM3 masks lifted through the rendered depth. Among the eleven pilot
+        cloud; the earlier 11-task Meta-World run took them from SAM3 masks lifted through the rendered depth. Among its eleven
         objects only the hammer and the wrench have a handle region. Pick one, orbit the scene, switch the source and
         read each candidate's distance and score.
       </p>
@@ -749,7 +795,7 @@
         <div class="ai-limit">
           <h3>Candidates come from simulator state</h3>
           <p>In every run the candidate set and the obstacle geometry are privileged. SAM3 entered only through the
-            functional term of the earlier Meta-World pilot, and the LIBERO-PRO goal is read from the task file.</p>
+            functional term of the earlier 11-task Meta-World run, and the LIBERO-PRO goal is read from the task file.</p>
         </div>
         <div class="ai-limit">
           <h3>Scripted executors bound success</h3>
