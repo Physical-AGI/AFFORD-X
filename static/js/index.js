@@ -236,9 +236,9 @@ var STAGES = {
   ground: {
     eyebrow: 'Component D · frozen',
     title: 'Ground the named parts',
-    lead: 'SAM3 segments the regions the intent names; depth lifts each mask to 3D points.',
-    body: 'Frames are rendered for every scene, segmented by text prompt on a GPU node, eroded by two pixels to ' +
-      'drop boundary depth, and lifted through the camera model. A region SAM3 does not detect contributes no ' +
+    lead: 'SAM3 segments the regions the intent names into part masks.',
+    body: 'Frames are rendered for every scene, segmented by text prompt on a GPU node and eroded by two pixels at ' +
+      'the mask boundary. A region SAM3 does not detect contributes no ' +
       'points and scores every candidate neutrally. Mask quality is scored against the simulator’s own part labels.',
     spec: [['Segmenter', 'SAM3 (frozen)'], ['Confidence threshold', '0.3'], ['Hammer-handle IoU', 'from the pilot'], ['Erosion', '2 px']]
   },
@@ -399,7 +399,7 @@ function setupExplorer() {
    Success-rate charts with Wilson intervals
    ------------------------------------------------------------------ */
 var HIGHLIGHT = {
-  L3_feasibility_first: '#6A3FB5', L4_feasibility_first: '#8E6BCF', B4_intent_full: '#6A3FB5',
+  L3_feasibility_first: '#8E6BCF', L4_feasibility_first: '#6A3FB5', B4_intent_full: '#6A3FB5',
   random: '#37404D', oracle: '#C9CDD4',
   L2_feasibility_first_geomparts: '#1F7A6E', L3_feasibility_first_geomparts: '#1F7A6E'
 };
@@ -470,20 +470,72 @@ function setupRateSection(hostId, pairsId, attr, blocks, wanted) {
   show(pills.length ? pills[0].dataset[attr] : Object.keys(blocks)[0]);
 }
 
+function rateOf(block, key) {
+  var row = block.methods.filter(function (m) { return m.key === key; })[0];
+  return row ? row.rate.toFixed(2) : '–';
+}
+
+function renderLiberoTable(data) {
+  var body = document.getElementById('ax-libero-table');
+  if (!body || !data.libero_pro) return;
+  var cols = ['goal_pos', 'goal_task', 'spatial_pos', 'spatial_task', 'object_pos', 'object_task'];
+  var rows = [['L4_feasibility_first', 'AFFORD-X, full layer'], ['random', 'random choice'], ['oracle', 'best-candidate ceiling']];
+  var html = rows.map(function (r) {
+    return '<tr' + (r[0] === 'L4_feasibility_first' ? ' class="ax-row-ours"' : '') + '><th scope="row" class="ai-th-text">' + r[1] + '</th>' +
+      cols.map(function (c) { return '<td>' + rateOf(data.libero_pro[c], r[0]) + '</td>'; }).join('') + '</tr>';
+  }).join('');
+  html += '<tr><th scope="row" class="ai-th-text">gate left no candidate (scenes)</th>' + cols.map(function (c) {
+    return '<td>' + data.libero_pro[c].abstained + ' / ' + data.libero_pro[c].n_scenes + '</td>';
+  }).join('') + '</tr>';
+  html += '<tr><th scope="row" class="ai-th-text">tasks covered</th>' + cols.map(function (c) {
+    return '<td>' + data.libero_pro[c].tasks_covered + ' / ' + data.libero_pro[c].tasks_total + '</td>';
+  }).join('') + '</tr>';
+  body.innerHTML = html;
+  var integrity = document.getElementById('ax-libero-integrity');
+  if (integrity && data.libero_pro_integrity) {
+    var g = data.libero_pro_integrity;
+    integrity.textContent = g.n_outcome_mismatch + ' of ' + g.n_videos.toLocaleString('en-US') +
+      ' recorded rollouts disagree with their unrecorded simulator outcome, and ' + g.determinism_inexact + ' of ' +
+      g.determinism_checks + ' rerun checks differ.';
+  }
+}
+
+function renderTierTable(data) {
+  var body = document.getElementById('ax-mt50-table');
+  if (!body || !data.metaworld || !data.metaworld.mt50) return;
+  var mt = data.metaworld.mt50;
+  var tiers = ['easy', 'medium', 'hard', 'very_hard', 'overall'];
+  var rows = [['L4_feasibility_first', 'AFFORD-X, full layer'], ['L0_stability', 'L0 stability'], ['random', 'random choice'],
+    ['oracle', 'best-candidate ceiling']];
+  body.innerHTML = rows.map(function (r) {
+    return '<tr' + (r[0] === 'L4_feasibility_first' ? ' class="ax-row-ours"' : '') + '><th scope="row" class="ai-th-text">' + r[1] + '</th>' +
+      tiers.map(function (t) { return '<td>' + mt.by_tier[r[0]][t].rate.toFixed(2) + '</td>'; }).join('') + '</tr>';
+  }).join('');
+  var head = document.getElementById('ax-mt50-head');
+  if (head) {
+    var names = { easy: 'Easy', medium: 'Medium', hard: 'Hard', very_hard: 'Very hard', overall: 'All' };
+    head.innerHTML = '<th class="ai-th-text" scope="col">Method</th>' + tiers.map(function (t) {
+      return '<th scope="col">' + names[t] + ' (' + mt.by_tier.oracle[t].n_tasks + ')</th>';
+    }).join('');
+  }
+}
+
 function setupResults() {
   var data = window.AFFORDX;
   if (!data) return;
-  setupRateSection('ax-libero', 'ax-libero-pairs', 'libero', data.libero, [
-    ['L3_feasibility_first|random|success', 'L3 feasibility-first minus random (post hoc)'],
-    ['L1_feasibility_first|L0_stability|success', 'L1 feasibility-first minus L0 stability'],
+  setupRateSection('ax-libero', 'ax-libero-pairs', 'libero', data.libero_pro, [
+    ['L3_feasibility_first|random|success', 'feasibility-first + task (L3) minus random'],
+    ['L4_feasibility_first|L3_feasibility_first|success', 'memory term: L4 minus L3'],
+    ['L1_feasibility_first|L0_stability|success', 'feasibility gate: L1 feasibility-first minus L0 stability'],
     ['L3_feasibility_first|L1_feasibility_first|success', 'task term: L3 minus L1 feasibility-first']
   ]);
   setupRateSection('ax-mw', 'ax-mw-pairs', 'mw', data.metaworld, [
-    ['L3_feasibility_first|random|success', 'L3 feasibility-first minus random'],
-    ['L2_feasibility_first|L2_feasibility_first_geomparts|success', 'SAM3 minus geometric parts at L2, success'],
-    ['L2_feasibility_first|L2_feasibility_first_geomparts|functional', 'SAM3 minus geometric parts at L2, functional part'],
-    ['L3_feasibility_first|L3_feasibility_first_geomparts|success', 'SAM3 minus geometric parts at L3, success']
+    ['L3_feasibility_first|random|success', 'feasibility-first + task (L3) minus random'],
+    ['L4_feasibility_first|L3_feasibility_first|success', 'memory term: L4 minus L3'],
+    ['L3_feasibility_first|L0_stability|success', 'L3 feasibility-first minus L0 stability']
   ]);
+  renderLiberoTable(data);
+  renderTierTable(data);
   setupRateSection('ax-proposer', 'ax-proposer-pairs', 'none', { arms: data.proposer }, [
     ['B4_intent_full|B1_proposer_direct_choice|success', 'B4 intent, all terms, minus B1 direct choice'],
     ['B1_proposer_direct_choice|random|success', 'B1 direct choice minus random']

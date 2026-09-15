@@ -6,7 +6,7 @@
 
   <!-- Primary Meta Tags -->
   <meta name="title" content="AFFORD-X: Affordance-Grounded Agentic Policy for Zero-Shot Robot Manipulation">
-  <meta name="description" content="AFFORD-X makes interaction selection explicit: candidate interactions, a feasibility gate, SAM3-grounded functional affordance and task compatibility, then execution. Pilot evidence on LIBERO-PRO Spatial and an 11-task Meta-World suite, with every null reported.">
+  <meta name="description" content="AFFORD-X makes interaction selection explicit: candidate interactions, a feasibility gate, functional affordance and task compatibility, then execution. Pilot evidence on four LIBERO-PRO suites under the Pos and Task perturbations and on Meta-World MT50, with every null reported.">
   <meta name="keywords" content="robot manipulation, affordance grounding, interaction selection, feasibility, SAM3, Gemini, zero-shot, LIBERO-PRO, Meta-World, counterfactual evaluation">
   <meta name="robots" content="index, follow">
   <meta name="language" content="English">
@@ -18,7 +18,7 @@
   <meta property="og:description" content="Remove what the arm cannot execute, then rank by function and task. Counterfactual evaluation on identical candidate sets, pilot results with nulls, rollout videos.">
   <meta property="og:url" content="https://physical-agi.github.io/AFFORD-X/">
   <meta property="og:image" content="https://physical-agi.github.io/AFFORD-X/static/images/method_framework.png">
-  <meta property="og:image:alt" content="The AFFORD-X framework drawn on one pilot scene: instruction and RGB-D input, a semantic proposer and candidate generator, SAM3 part grounding, feasibility-first selection and rollout keyframes">
+  <meta property="og:image:alt" content="The AFFORD-X framework drawn on one pilot scene: instruction and RGB observation, a semantic proposer and candidate generator, SAM3 part grounding, feasibility-first selection and rollout keyframes">
   <meta property="article:section" content="Robotics">
   <meta property="article:tag" content="robot manipulation">
   <meta property="article:tag" content="affordance">
@@ -102,6 +102,7 @@
       <a href="#abstract">Abstract</a>
       <a href="#method">Method</a>
       <a href="#replay">Replay</a>
+      <a href="#qualitative">Qualitative</a>
       <a href="#libero">LIBERO-PRO</a>
       <a href="#metaworld">Meta-World</a>
       <a href="#proposer">Proposer</a>
@@ -178,13 +179,12 @@
       <div class="hero-body">
         <figure class="ai-figure" style="margin-top:0">
           <img src="static/images/method_framework.png" class="ai-zoomable"
-               alt="The AFFORD-X framework on the Meta-World hammer scene: instruction and RGB-D input; a semantic proposer produces a typed intent and a candidate generator produces 16 grasps; SAM3 segments the handle and head; feasibility-first ranking selects a handle grasp that succeeds while stability ranking selects a head grasp that fails">
+               alt="The AFFORD-X framework on the Meta-World hammer scene: instruction and RGB observation; a semantic proposer produces a typed intent and a candidate generator produces 16 grasps; SAM3 segments the handle and head; feasibility-first ranking selects a handle grasp that succeeds while stability ranking selects a head grasp that fails">
           <figcaption>
             <strong>AFFORD-X on one pilot scene</strong> (Meta-World hammer, seed 0). <strong>Stage&nbsp;1:</strong>
             Gemini 3.8 Flash turns the instruction into a typed intent, and 16 top-down grasp candidates are generated
             (in this pilot, from simulator geometry). <strong>Stage&nbsp;2:</strong> SAM3 segments the parts the intent
-            names; their depth-lifted points feed the functional term beside feasibility, task compatibility and
-            memory. <strong>Stage&nbsp;3:</strong> the feasibility-first rule removes what the arm cannot execute and
+            names, and the part masks feed the functional term beside feasibility, task compatibility and memory. <strong>Stage&nbsp;3:</strong> the feasibility-first rule removes what the arm cannot execute and
             ranks the rest; the keyframes show the selected handle grasp succeeding and the stability-ranked head grasp
             failing. Every image, mask, score and keyframe is read from the pilot run, and no module is trained.
           </figcaption>
@@ -198,16 +198,16 @@
     <div class="container is-max-desktop">
       <div class="ai-stats">
         <div class="ai-stat">
-          <div class="ai-stat-value" data-count-to="0.35" data-decimals="2" data-prefix="+">+0.00</div>
-          <div class="ai-stat-label">Over random choice on identical candidates, LIBERO-PRO Spatial Pos, n = 100 (privileged state)</div>
+          <div class="ai-stat-value" data-count-to="0.92" data-decimals="2">0.00</div>
+          <div class="ai-stat-label">AFFORD-X success on LIBERO-PRO Spatial Pos, n = 100, against 0.61 for random choice (privileged state)</div>
         </div>
         <div class="ai-stat">
-          <div class="ai-stat-value" data-count-to="0.24" data-decimals="2" data-prefix="+">+0.00</div>
-          <div class="ai-stat-label">Same comparison under the Task perturbation, n = 80</div>
+          <div class="ai-stat-value" data-count-to="6" data-decimals="0">0</div>
+          <div class="ai-stat-label">Of 6 reported LIBERO-PRO Pos/Task cells in which AFFORD-X beats random choice among the same candidates</div>
         </div>
         <div class="ai-stat">
-          <div class="ai-stat-value" data-count-to="0" data-decimals="0">0</div>
-          <div class="ai-stat-label">Meta-World decision specs that beat random choice in the 11-task pilot</div>
+          <div class="ai-stat-value" data-count-to="0.44" data-decimals="2">0.00</div>
+          <div class="ai-stat-label">AFFORD-X success on Meta-World MT50, 250 episodes, against 0.40 for random choice and a 0.82 ceiling</div>
         </div>
         <div class="ai-stat">
           <div class="ai-stat-value" data-count-to="0" data-decimals="0">0</div>
@@ -233,17 +233,17 @@
               compatibility rank the rest. No module is trained. Evaluation is counterfactual: every compared method
               ranks the same content-hashed candidate set, and every candidate is executed from the identical start
               state in the benchmark's own simulator, so a success difference is a difference in the selected
-              interaction. In the pilot phase on LIBERO-PRO Spatial with a 7-DoF Franka, feasibility-first selection
-              with task compatibility succeeds in 0.96&nbsp;[0.90,&nbsp;0.98] of position-perturbed scenes
-              (<em>n</em>&nbsp;=&nbsp;100) and 0.95&nbsp;[0.88,&nbsp;0.98] of task-perturbed scenes
-              (<em>n</em>&nbsp;=&nbsp;80), +0.35 and +0.24 over random choice among the same candidates. Those runs read
-              object geometry and the goal from simulator state, so they bound the selection layer and are not
-              comparable with policy results on the LIBERO-PRO leaderboard. On an 11-task Meta-World pilot with a
-              4-DoF Sawyer, no decision spec beats random choice, the proposer arms miss their declared bar, and SAM3
-              part grounding lowers functional-part selection against a geometric partition, because its handle mask
-              reaches the head and a distance-based score cannot separate adjacent parts. We report every null beside
-              the positive result, with go/no-go rules declared before each run, paired bootstrap intervals and rollout
-              videos recorded during evaluation.
+              interaction. In the pilot phase with a 7-DoF Franka on LIBERO-PRO under the position and task
+              perturbations, the full decision layer succeeds in 0.57 and 0.38 of LIBERO-Goal scenes, 0.92 and 0.96 of
+              LIBERO-Spatial scenes and every LIBERO-Object scene, above random choice among the same candidates in all
+              six reported cells (10 initial states per task; LIBERO-10 is not reported because the scripted executor
+              supports one of its ten tasks). Those runs read object geometry and the goal from simulator state, so they
+              bound the selection layer and are not comparable with policy results on the LIBERO-PRO leaderboard. On the
+              50 Meta-World MT50 tasks with a 4-DoF Sawyer, the same layer reaches 0.44 against 0.40 for random choice
+              and a 0.82 best-candidate ceiling, which misses its declared bar, and an earlier 11-task pilot found that
+              SAM3 part grounding lowers functional-part selection against a geometric partition. We report every null
+              beside the positive results, with go/no-go rules declared before each run, paired bootstrap intervals and
+              rollout videos recorded during evaluation.
             </p>
           </div>
         </div>
@@ -273,7 +273,7 @@
           <div class="ai-stage-arrow" role="presentation" aria-hidden="true"><i class="fas fa-arrow-down"></i></div>
           <button class="ai-stage" role="tab" aria-selected="false" data-stage="ground" style="--stage-c:var(--stage-ground)">
             <span class="ai-stage-num">D</span>
-            <span><span class="ai-stage-name">Ground parts</span><span class="ai-stage-sub">SAM3 masks lifted through depth</span></span>
+            <span><span class="ai-stage-name">Ground parts</span><span class="ai-stage-sub">SAM3 masks for the named parts</span></span>
           </button>
           <div class="ai-stage-arrow" role="presentation" aria-hidden="true"><i class="fas fa-arrow-down"></i></div>
           <button class="ai-stage" role="tab" aria-selected="false" data-stage="select" style="--stage-c:var(--stage-select)">
@@ -332,7 +332,7 @@
           <div class="ai-note">
             <h3>Where the points come from</h3>
             <p><code>grasp_region:&lt;part&gt;</code> scores 1.0 within 3&nbsp;cm of the part's points, falling to 0 at
-              8&nbsp;cm. The points come from SAM3 masks lifted through depth, or, for the contrast specs, from a
+              8&nbsp;cm. The part points come from SAM3 masks or, for the contrast specs, from a
               geometric partition of the object cloud. The Meta-World pilot shows why this distinction matters.</p>
           </div>
         </div>
@@ -348,9 +348,9 @@
           </div>
           <div class="ai-note">
             <h3>What it has shown so far</h3>
-            <p>Adding the task term on top of feasibility adds +0.10&nbsp;[+0.05,&nbsp;+0.16] on LIBERO-PRO Spatial Pos
-              and +0.09&nbsp;[0.00,&nbsp;+0.18] under Task, where the declared bar (a lower bound above zero) is
-              missed.</p>
+            <p>Adding the task term on top of feasibility adds +0.07&nbsp;[+0.02,&nbsp;+0.12] on LIBERO-PRO Spatial Pos,
+              which clears the declared bar (a lower bound above zero), and nothing on Goal Task, where the declared bar
+              is missed.</p>
           </div>
         </div>
         <div class="ai-dsl">
@@ -368,9 +368,10 @@
           </div>
           <div class="ai-note">
             <h3>What decides on the Franka</h3>
-            <p>On LIBERO-PRO Spatial Pos, gating a weighted sum adds +0.69&nbsp;[+0.60,&nbsp;+0.78] at L1, while the gate
+            <p>On LIBERO-PRO Spatial Pos, gating a weighted sum adds +0.68&nbsp;[+0.59,&nbsp;+0.77] at L1, while the gate
               changes nothing once the product rule is fixed: a product already drives an infeasible candidate to zero.
-              Feasibility has to bind; how it binds is secondary.</p>
+              On Goal Task the gate costs &minus;0.25&nbsp;[&minus;0.35,&nbsp;&minus;0.16], because it empties the
+              candidate set in 50 of 80 scenes.</p>
           </div>
         </div>
       </div>
@@ -399,7 +400,8 @@
       <p class="ai-table-note">
         Runs are immutable directories with resolved configs, code hashes, package versions and a file manifest, and
         suites launch from frozen source snapshots. Rollout videos are recorded while the selected candidates execute,
-        and each is checked against the method's selection.
+        and each is checked against the method's selection. In the current LIBERO-PRO runs, none of the 1,288 recorded
+        rollouts disagrees with its unrecorded simulator outcome.
       </p>
     </div>
   </section>
@@ -464,41 +466,85 @@
     </div>
   </section>
 
-  <!-- LIBERO-PRO -->
-  <section class="section" id="libero">
+  <!-- Qualitative -->
+  <section class="section" id="qualitative">
     <div class="container is-max-desktop">
-      <h2 class="title is-3 has-text-centered">LIBERO-PRO Spatial, Franka</h2>
+      <h2 class="title is-3 has-text-centered">What the Selection Looks Like</h2>
       <p class="ai-section-intro">
-        One suite in the pilot, both geometry-changing perturbations. Rates with 95% Wilson intervals; hover a bar.
+        Candidate scores, the selected interaction and its execution, taken from rollout videos recorded during
+        evaluation. Click to enlarge.
+      </p>
+      <figure class="ai-figure" style="margin-top:0">
+        <img src="static/images/qualitative_results.jpg" class="ai-zoomable" loading="lazy"
+             alt="Four scenes, one per row: LIBERO-PRO Spatial and Goal under the position perturbation and two Meta-World MT50 tasks. The first column shows every candidate interaction coloured by the AFFORD-X decision score, with gated candidates crossed out and the selected interaction ringed; the next columns show contact, execution and task completion.">
+        <figcaption>
+          <strong>Left:</strong> candidate interactions projected into the video camera; crosses are removed by the
+          feasibility gate, the rest are coloured by the AFFORD-X score, the green ring is the selected interaction and
+          the orange diamond the candidate stability ranking would choose. <strong>Right:</strong> the selection at
+          contact, during execution and at task completion. Each row is the first scene, in sorted order, in which
+          AFFORD-X and stability ranking select different candidates, the recorded AFFORD-X rollout succeeds and the
+          stability-ranked one fails.
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- LIBERO-PRO -->
+  <section class="section hero is-light" id="libero">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3 has-text-centered">LIBERO-PRO, Four Suites, Pos and Task</h2>
+      <p class="ai-section-intro">
+        A 7-DoF Franka, 10 benchmark initial states per task and every method on the same candidates. Rates with 95%
+        Wilson intervals; hover a bar.
       </p>
       <div class="ax-pills">
-        <button class="ax-pill is-active" data-libero="pos">Pos perturbation &middot; n = 100</button>
-        <button class="ax-pill" data-libero="task">Task perturbation &middot; n = 80</button>
+        <button class="ax-pill is-active" data-libero="goal_pos">Goal Pos &middot; n = 80</button>
+        <button class="ax-pill" data-libero="goal_task">Goal Task &middot; n = 80</button>
+        <button class="ax-pill" data-libero="spatial_pos">Spatial Pos &middot; n = 100</button>
+        <button class="ax-pill" data-libero="spatial_task">Spatial Task &middot; n = 80</button>
+        <button class="ax-pill" data-libero="object_pos">Object Pos &middot; n = 100</button>
+        <button class="ax-pill" data-libero="object_task">Object Task &middot; n = 100</button>
       </div>
       <div class="ax-chart-card ax-chart-host" id="ax-libero"></div>
       <div class="ax-pairs" id="ax-libero-pairs"></div>
 
-      <div class="ax-cards">
+      <div class="ai-table-wrap">
+        <table class="ai-table">
+          <caption class="ai-caption">Success on identical candidate sets. LIBERO-10 is not reported: one of its ten tasks has a goal the scripted executor supports.</caption>
+          <thead><tr><th class="ai-th-text" scope="col">Method</th><th scope="col">Goal Pos</th><th scope="col">Goal Task</th><th scope="col">Spatial Pos</th><th scope="col">Spatial Task</th><th scope="col">Object Pos</th><th scope="col">Object Task</th></tr></thead>
+          <tbody id="ax-libero-table"></tbody>
+        </table>
+      </div>
+      <p class="ai-table-note" id="ax-libero-integrity"></p>
+
+      <div class="ax-cards ax-cards-3">
         <div class="ax-card">
-          <div class="ax-card-eyebrow">Pilot verdict &middot; justified</div>
-          <h3>Feasibility decides the outcome</h3>
-          <p>Stability ranking picks the point nearest the centre of mass, which on a bowl is the bottom plate and is
-            not graspable top-down, so it fails in every scene. Against random choice from the same candidates,
-            feasibility-first selection with the task term adds +0.35 under Pos and +0.24 under Task (post hoc).</p>
+          <div class="ax-card-eyebrow">Spatial &middot; feasibility decides</div>
+          <h3>Within 0.08 of the best candidate</h3>
+          <p>Stability ranking picks the point nearest the centre of mass, which on these bowls is rejected as
+            infeasible or fails in execution, and it succeeds in no Spatial scene. The full layer reaches 0.92 under Pos
+            and 0.96 under Task, against 0.61 and 0.71 for random choice among the same candidates.</p>
+        </div>
+        <div class="ax-card is-null">
+          <div class="ax-card-eyebrow">Goal Task &middot; the gate costs</div>
+          <h3>No candidate passes in 50 of 80 scenes</h3>
+          <p>The feasibility gate empties the candidate set and the layer abstains, so it reaches 0.38 where ranking
+            without the gate reaches 0.62. On Object every rule except random choice reaches the ceiling, so that suite
+            does not separate the rules.</p>
         </div>
         <div class="ax-card is-null">
           <div class="ax-card-eyebrow">Bound, not benchmark</div>
           <h3>Privileged state bypasses what these axes test</h3>
           <p>These runs read candidate geometry from the simulator and the goal from the task file. Pos tests position
             memorisation and Task tests instruction following, so the numbers bound the selection layer and do not sit
-            beside policy results. The reporting section shows what a comparable row needs.</p>
+            beside policy results.</p>
         </div>
       </div>
 
       <div class="ax-video-grid">
         <figure class="ax-video">
           <video src="static/videos/libero_spatial_ours.mp4" autoplay muted loop playsinline preload="metadata"></video>
-          <figcaption><span class="ax-outcome is-success"><i class="fas fa-check"></i> succeeds</span> Feasibility-first with the task term (L3), LIBERO-PRO Spatial Pos, task 0, init state 0.</figcaption>
+          <figcaption><span class="ax-outcome is-success"><i class="fas fa-check"></i> succeeds</span> AFFORD-X, full decision layer, LIBERO-PRO Spatial Pos, task 0, initial state 0.</figcaption>
         </figure>
         <figure class="ax-video">
           <video src="static/videos/libero_spatial_stability.mp4" autoplay muted loop playsinline preload="metadata"></video>
@@ -509,30 +555,33 @@
   </section>
 
   <!-- Meta-World -->
-  <section class="section hero is-light" id="metaworld">
+  <section class="section" id="metaworld">
     <div class="container is-max-desktop">
-      <h2 class="title is-3 has-text-centered">Meta-World, 11 Tasks, SAM3 Grounding</h2>
+      <h2 class="title is-3 has-text-centered">Meta-World MT50, 50 Tasks</h2>
       <p class="ai-section-intro">
-        Five rollouts per task, a 4-DoF Sawyer, and SAM3 part grounding. The same runs contain the geometric-partition
-        specs, so the part source is compared on identical candidates.
+        The official MT50 tasks and variations with seed 0, five episodes per task, a 4-DoF Sawyer and no
+        perturbations. Rates over 250 episodes with 95% Wilson intervals.
       </p>
-      <div class="ax-pills">
-        <button class="ax-pill is-active" data-mw="unperturbed">Unperturbed &middot; n = 55</button>
-        <button class="ax-pill" data-mw="envelopes">Reach envelopes &middot; n = 165</button>
-        <button class="ax-pill" data-mw="perturbations">Perturbation sweeps &middot; n = 935</button>
-      </div>
       <div class="ax-chart-card ax-chart-host" id="ax-mw"></div>
       <div class="ax-pairs" id="ax-mw-pairs"></div>
 
-      <div class="ax-callout is-null">
-        <strong>Pilot verdict: not justified in its current form.</strong> No decision spec beats random choice among
-        the same candidates, and the ceiling (0.93 unperturbed) shows how much selection headroom is left. On 7 of 11
-        tasks no functional region is named, so a centre-of-mass stability heuristic decides, and it is worse than
-        random on objects whose centre is not a good grasp. A functional part is also not always the part this
-        executor can use: grasping the wrench by its handle fails on assembly where grasping the ring succeeds.
+      <div class="ai-table-wrap">
+        <table class="ai-table">
+          <caption class="ai-caption">Success by difficulty tier (number of tasks), episode-weighted</caption>
+          <thead><tr id="ax-mt50-head"></tr></thead>
+          <tbody id="ax-mt50-table"></tbody>
+        </table>
       </div>
 
-      <h3 class="title is-4 has-text-centered" style="margin-top:2.5rem">SAM3 finds the parts; the score cannot separate them</h3>
+      <div class="ax-callout is-null">
+        <strong>Pilot verdict: not justified in its current form.</strong> The full layer reaches 0.44 against 0.40 for
+        random choice among the same candidates, and both declared selection rules are NO-GO. The headroom is large:
+        the best candidate succeeds in 0.82 of episodes, and in 188 of 250 scenes some candidates succeed while others
+        fail. Four tasks (handle-pull, handle-pull-side, peg-unplug-side, pick-out-of-hole) have no successful
+        candidate for this executor.
+      </div>
+
+      <h3 class="title is-4 has-text-centered" style="margin-top:2.5rem">Earlier 11-task pilot: SAM3 finds the parts, the score cannot separate them</h3>
       <div class="columns is-vcentered">
         <div class="column is-7">
           <figure class="ai-figure" style="margin-top:0">
@@ -570,19 +619,19 @@
 
       <div class="ax-video-grid">
         <figure class="ax-video">
-          <video src="static/videos/metaworld_hammer_ours.mp4" autoplay muted loop playsinline preload="metadata"></video>
-          <figcaption><span class="ax-outcome is-success"><i class="fas fa-check"></i> succeeds</span> Feasibility-first with the task term (L3): a handle grasp, hammer seed 0.</figcaption>
+          <video src="static/videos/metaworld_button_press_ours.mp4" autoplay muted loop playsinline preload="metadata"></video>
+          <figcaption><span class="ax-outcome is-success"><i class="fas fa-check"></i> succeeds</span> AFFORD-X, full decision layer, MT50 button-press, episode 0.</figcaption>
         </figure>
         <figure class="ax-video">
-          <video src="static/videos/metaworld_hammer_stability.mp4" autoplay muted loop playsinline preload="metadata"></video>
-          <figcaption><span class="ax-outcome is-fail"><i class="fas fa-times"></i> fails</span> Stability ranking (L0): a head grasp on the same candidate set.</figcaption>
+          <video src="static/videos/metaworld_button_press_stability.mp4" autoplay muted loop playsinline preload="metadata"></video>
+          <figcaption><span class="ax-outcome is-fail"><i class="fas fa-times"></i> fails</span> Stability ranking (L0) on the same scene and candidate set.</figcaption>
         </figure>
       </div>
     </div>
   </section>
 
   <!-- Proposer -->
-  <section class="section" id="proposer">
+  <section class="section hero is-light" id="proposer">
     <div class="container is-max-desktop">
       <h2 class="title is-3 has-text-centered">The Semantic Proposer</h2>
       <p class="ai-section-intro">
@@ -601,26 +650,18 @@
   </section>
 
   <!-- Reporting -->
-  <section class="section hero is-light" id="reporting">
+  <section class="section" id="reporting">
     <div class="container is-max-desktop">
-      <h2 class="title is-3 has-text-centered">How LIBERO-PRO Will Be Reported</h2>
+      <h2 class="title is-3 has-text-centered">What a Comparable LIBERO-PRO Row Needs</h2>
       <p class="ai-section-intro">
-        The full phase reports the suite-by-axis matrix beside published policies. Our row stays empty until it is
-        measured under the same protocol.
+        LIBERO-PRO results are reported on the Pos and Task perturbations in all four suites. The privileged-state runs
+        above bound the selection layer; a row that sits beside published policies needs three changes.
       </p>
-      <figure class="ai-figure" style="margin-top:0">
-        <img src="static/images/libero_pro_protocol.png" class="ai-zoomable" alt="Heatmap of LIBERO-PRO normalized success for published policies across Goal, Spatial, LIBERO-10 and Object suites and five perturbation axes, with an empty AFFORD-X row for perception and language">
-        <figcaption>
-          Published rows as reported in the literature (values to be verified against each primary source before
-          submission); the baseline mean is recomputed over the rows that report all 20 cells. Red outlines mark the
-          geometry-changing axes. The privileged-state pilot above is deliberately not in this table.
-        </figcaption>
-      </figure>
       <div class="ax-cards ax-cards-3">
         <div class="ax-card">
           <div class="ax-card-eyebrow">Requirement 1</div>
           <h3>Candidates from perception</h3>
-          <p>Object candidates and part points from the agent-view camera, SAM3 and depth, not from simulator
+          <p>Object candidates and part points from the agent-view camera and SAM3, not from simulator
             geometry.</p>
         </div>
         <div class="ax-card">
@@ -631,15 +672,16 @@
         </div>
         <div class="ax-card">
           <div class="ax-card-eyebrow">Requirement 3</div>
-          <h3>All five axes</h3>
-          <p>Obj, Sem and Env are not yet implemented, and Sem only tests a system that reads the instruction.</p>
+          <h3>Every Pos and Task task</h3>
+          <p>An executor for multi-step goals: LIBERO-10 is not reported because one of its ten tasks has a single
+            placement goal, and two Goal tasks are excluded for the same reason.</p>
         </div>
       </div>
     </div>
   </section>
 
   <!-- Nulls and limits -->
-  <section class="section" id="limits">
+  <section class="section hero is-light" id="limits">
     <div class="container is-max-desktop">
       <h2 class="title is-3 has-text-centered">Nulls and Evidence Boundaries</h2>
       <p class="ai-section-intro">
@@ -654,13 +696,13 @@
         </div>
         <div class="ai-limit">
           <h3>Candidates come from simulator state</h3>
-          <p>In both pilots the candidate set and the obstacle geometry are privileged. SAM3 enters only through the
-            functional term, and the LIBERO-PRO goal is read from the task file.</p>
+          <p>In every run the candidate set and the obstacle geometry are privileged. SAM3 entered only through the
+            functional term of the earlier Meta-World pilot, and the LIBERO-PRO goal is read from the task file.</p>
         </div>
         <div class="ai-limit">
           <h3>Scripted executors bound success</h3>
-          <p>A correct, feasible grasp that the executor then fails is the largest single failure category on
-            Meta-World. The best-candidate ceiling, not the rule, is the limiting number on several tasks.</p>
+          <p>On MT50 four tasks have no successful candidate for this executor, and LIBERO-10's multi-step goals are
+            not supported, so the best-candidate ceiling, not the rule, is the limiting number on several tasks.</p>
         </div>
         <div class="ai-limit">
           <h3>Functional is not always actionable</h3>
@@ -669,10 +711,10 @@
             independent measure.</p>
         </div>
         <div class="ai-limit">
-          <h3>Two videos disagree with the evaluation</h3>
-          <p>In the robustness run, 2 of 2,921 recorded videos show a candidate the parent evaluation did not select
-            for a listed method. Episode outcomes are unaffected, but the discrepancy is traced before the full
-            phase.</p>
+          <h3>Reproducibility needed three fixes</h3>
+          <p>LIBERO resampled fixture poses on every reset, a soft reset kept the gripper's last command, and the Franka
+            workspace was fixed to tabletop height. With all three fixed, none of the 1,288 recorded LIBERO-PRO
+            rollouts disagrees with its unrecorded outcome; earlier LIBERO-PRO runs are superseded.</p>
         </div>
         <div class="ai-limit">
           <h3>Simulation only, no agentic loop yet</h3>
@@ -690,7 +732,7 @@
   </section>
 
   <!-- BibTeX -->
-  <section class="section hero is-light" id="bibtex">
+  <section class="section" id="bibtex">
     <div class="container is-max-desktop content">
       <div class="bibtex-header">
         <h2 class="title">BibTeX</h2>
