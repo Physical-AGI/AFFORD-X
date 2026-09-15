@@ -4664,6 +4664,7 @@ window.AFFORDX = {
    "seed": 0,
    "method": "L4_feasibility_first",
    "candidate": 9,
+   "poster": "static/images/posters/libero_spatial_ours.jpg",
    "success": true,
    "run": "libero_pro_spatial_pos/20260915T034734106275Z_a54321d79fa9"
   },
@@ -4672,6 +4673,7 @@ window.AFFORDX = {
    "seed": 0,
    "method": "L0_stability",
    "candidate": 11,
+   "poster": "static/images/posters/libero_spatial_stability.jpg",
    "success": false,
    "run": "libero_pro_spatial_pos/20260915T034734106275Z_a54321d79fa9"
   },
@@ -4680,6 +4682,7 @@ window.AFFORDX = {
    "seed": 0,
    "method": "L4_feasibility_first",
    "candidate": 11,
+   "poster": "static/images/posters/metaworld_button_press_ours.jpg",
    "success": true,
    "run": "metaworld_mt50/20260914T183705774968Z_4802bd291477"
   },
@@ -4688,6 +4691,7 @@ window.AFFORDX = {
    "seed": 0,
    "method": "L0_stability",
    "candidate": 12,
+   "poster": "static/images/posters/metaworld_button_press_stability.jpg",
    "success": false,
    "run": "metaworld_mt50/20260914T183705774968Z_4802bd291477"
   }
@@ -4721,5 +4725,117 @@ window.AFFORDX = {
     "stability_index": 12
    }
   ]
- }
+ },
+ "gallery": [
+  {
+   "key": "libero_goal_pos",
+   "group": "LIBERO-PRO",
+   "label": "Goal \u00b7 Pos",
+   "scene": "libero_goal:1|seed2",
+   "instruction": "Put the bowl on the stove.",
+   "candidate": 9,
+   "run": "libero_pro_goal_pos/20260915T032127946671Z_dc79744949af",
+   "video": "static/videos/gallery/libero_goal_pos.mp4",
+   "poster": "static/images/gallery/libero_goal_pos.jpg"
+  },
+  {
+   "key": "libero_goal_task",
+   "group": "LIBERO-PRO",
+   "label": "Goal \u00b7 Task",
+   "scene": "libero_goal:2|seed0",
+   "instruction": "Put the wine bottle in the bowl.",
+   "candidate": 2,
+   "run": "libero_pro_goal_task/20260915T033606221753Z_f6f8e52338a8",
+   "video": "static/videos/gallery/libero_goal_task.mp4",
+   "poster": "static/images/gallery/libero_goal_task.jpg"
+  },
+  {
+   "key": "libero_spatial_pos",
+   "group": "LIBERO-PRO",
+   "label": "Spatial \u00b7 Pos",
+   "scene": "libero_spatial:0|seed0",
+   "instruction": "Pick the akita black bowl between the plate and the ramekin and place it on the plate.",
+   "candidate": 9,
+   "run": "libero_pro_spatial_pos/20260915T034734106275Z_a54321d79fa9",
+   "video": "static/videos/gallery/libero_spatial_pos.mp4",
+   "poster": "static/images/gallery/libero_spatial_pos.jpg"
+  },
+  {
+   "key": "libero_spatial_task",
+   "group": "LIBERO-PRO",
+   "label": "Spatial \u00b7 Task",
+   "scene": "libero_spatial:0|seed0",
+   "instruction": "Pick the akita black bowl not between the plate and the ramekin and place it on the plate.",
+   "candidate": 10,
+   "run": "libero_pro_spatial_task/20260915T041404912647Z_257659cc47d0",
+   "video": "static/videos/gallery/libero_spatial_task.mp4",
+   "poster": "static/images/gallery/libero_spatial_task.jpg"
+  },
+  {
+   "key": "libero_object_pos",
+   "group": "LIBERO-PRO",
+   "label": "Object \u00b7 Pos",
+   "scene": "libero_object:0|seed0",
+   "instruction": "Pick the alphabet soup and place it in the basket.",
+   "candidate": 3,
+   "run": "libero_pro_object_pos/20260915T043918984703Z_31781102264c",
+   "video": "static/videos/gallery/libero_object_pos.mp4",
+   "poster": "static/images/gallery/libero_object_pos.jpg"
+  },
+  {
+   "key": "libero_object_task",
+   "group": "LIBERO-PRO",
+   "label": "Object \u00b7 Task",
+   "scene": "libero_object:0|seed0",
+   "instruction": "Pick the cream cheese and place it in the basket.",
+   "candidate": 8,
+   "run": "libero_pro_object_task/20260915T045130442564Z_5d647713eac3",
+   "video": "static/videos/gallery/libero_object_task.mp4",
+   "poster": "static/images/gallery/libero_object_task.jpg"
+  },
+  {
+   "key": "mt50_easy",
+   "group": "Meta-World MT50",
+   "label": "easy \u00b7 button-press-topdown",
+   "scene": "button-press-topdown-v3|seed2",
+   "instruction": "Press the red button down from above.",
+   "candidate": 2,
+   "run": "metaworld_mt50/20260914T183705774968Z_4802bd291477",
+   "video": "static/videos/gallery/mt50_easy.mp4",
+   "poster": "static/images/gallery/mt50_easy.jpg"
+  },
+  {
+   "key": "mt50_medium",
+   "group": "Meta-World MT50",
+   "label": "medium \u00b7 bin-picking",
+   "scene": "bin-picking-v3|seed1",
+   "instruction": "Pick up the green cube from the left bin and drop it into the right bin.",
+   "candidate": 6,
+   "run": "metaworld_mt50/20260914T183705774968Z_4802bd291477",
+   "video": "static/videos/gallery/mt50_medium.mp4",
+   "poster": "static/images/gallery/mt50_medium.jpg"
+  },
+  {
+   "key": "mt50_hard",
+   "group": "Meta-World MT50",
+   "label": "hard \u00b7 assembly",
+   "scene": "assembly-v3|seed0",
+   "instruction": "Pick up the wrench (a round nut with a handle) and put the ring over the red peg.",
+   "candidate": 15,
+   "run": "metaworld_mt50/20260914T183705774968Z_4802bd291477",
+   "video": "static/videos/gallery/mt50_hard.mp4",
+   "poster": "static/images/gallery/mt50_hard.jpg"
+  },
+  {
+   "key": "mt50_very_hard",
+   "group": "Meta-World MT50",
+   "label": "very hard \u00b7 disassemble",
+   "scene": "disassemble-v3|seed0",
+   "instruction": "Pick up the wrench and lift its ring off the peg.",
+   "candidate": 11,
+   "run": "metaworld_mt50/20260914T183705774968Z_4802bd291477",
+   "video": "static/videos/gallery/mt50_very_hard.mp4",
+   "poster": "static/images/gallery/mt50_very_hard.jpg"
+  }
+ ]
 };

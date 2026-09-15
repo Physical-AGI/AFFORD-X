@@ -18,7 +18,7 @@
   <meta property="og:description" content="Remove what the arm cannot execute, then rank by function and task. Counterfactual evaluation on identical candidate sets, pilot results with nulls, rollout videos.">
   <meta property="og:url" content="https://physical-agi.github.io/AFFORD-X/">
   <meta property="og:image" content="https://physical-agi.github.io/AFFORD-X/static/images/method_framework.png">
-  <meta property="og:image:alt" content="The AFFORD-X framework drawn on one pilot scene: instruction and RGB observation, a semantic proposer and candidate generator, SAM3 part grounding, feasibility-first selection and rollout keyframes">
+  <meta property="og:image:alt" content="The AFFORD-X framework drawn on one pilot scene: instruction and observation, a semantic proposer and candidate generator, SAM3 part grounding, feasibility-first selection and successful rollout keyframes">
   <meta property="article:section" content="Robotics">
   <meta property="article:tag" content="robot manipulation">
   <meta property="article:tag" content="affordance">
@@ -116,6 +116,9 @@
 
 <main id="main-content">
   <a id="top"></a>
+  <noscript>
+    <p class="ai-noscript">The charts, tables, replay explorer and rollout gallery need JavaScript. The figures and text on this page remain readable without it.</p>
+  </noscript>
 
   <section class="hero">
     <div class="hero-body">
@@ -179,14 +182,15 @@
       <div class="hero-body">
         <figure class="ai-figure" style="margin-top:0">
           <img src="static/images/method_framework.png" class="ai-zoomable"
-               alt="The AFFORD-X framework on the Meta-World hammer scene: instruction and RGB observation; a semantic proposer produces a typed intent and a candidate generator produces 16 grasps; SAM3 segments the handle and head; feasibility-first ranking selects a handle grasp that succeeds while stability ranking selects a head grasp that fails">
+               alt="The AFFORD-X framework on the Meta-World hammer scene: instruction and observation; a semantic proposer produces a typed intent and a candidate generator produces 16 grasps; SAM3 segments the handle and head; feasibility-first ranking selects a handle grasp, and keyframes show the selected interaction succeeding on Meta-World and on LIBERO-PRO Spatial">
           <figcaption>
             <strong>AFFORD-X on one pilot scene</strong> (Meta-World hammer, seed 0). <strong>Stage&nbsp;1:</strong>
             Gemini 3.8 Flash turns the instruction into a typed intent, and 16 top-down grasp candidates are generated
             (in this pilot, from simulator geometry). <strong>Stage&nbsp;2:</strong> SAM3 segments the parts the intent
             names, and the part masks feed the functional term beside feasibility, task compatibility and memory. <strong>Stage&nbsp;3:</strong> the feasibility-first rule removes what the arm cannot execute and
-            ranks the rest; the keyframes show the selected handle grasp succeeding and the stability-ranked head grasp
-            failing. Every image, mask, score and keyframe is read from the pilot run, and no module is trained.
+            ranks the rest; the keyframes show the selected interaction succeeding on the Meta-World hammer scene and on a
+            LIBERO-PRO Spatial scene. Every image, mask, score and keyframe is read from logged runs, and no module is
+            trained.
           </figcaption>
         </figure>
       </div>
@@ -486,6 +490,24 @@
           stability-ranked one fails.
         </figcaption>
       </figure>
+
+      <h3 class="title is-4 has-text-centered" style="margin-top:2.5rem">Browse Successful Rollouts</h3>
+      <p class="ai-section-intro">
+        One recorded AFFORD-X rollout per LIBERO-PRO cell and per MT50 difficulty tier: the first scene, in sorted order,
+        in which the full decision layer's selection succeeded. Pick a clip, or use the arrow keys.
+      </p>
+      <div class="ax-gallery" id="ax-gallery">
+        <div id="ax-gallery-pills"></div>
+        <figure class="ax-video ax-gallery-player">
+          <video id="ax-gallery-video" muted loop playsinline controls preload="metadata"></video>
+          <p class="ax-video-fallback" id="ax-gallery-fallback" hidden>This rollout could not be played in your browser.</p>
+          <figcaption id="ax-gallery-caption" aria-live="polite"></figcaption>
+        </figure>
+        <div class="ax-gallery-nav">
+          <button class="ax-pill" type="button" id="ax-gallery-prev" aria-label="Previous rollout"><i class="fas fa-chevron-left" aria-hidden="true"></i> Previous</button>
+          <button class="ax-pill" type="button" id="ax-gallery-next" aria-label="Next rollout">Next <i class="fas fa-chevron-right" aria-hidden="true"></i></button>
+        </div>
+      </div>
     </div>
   </section>
 

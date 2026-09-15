@@ -148,7 +148,7 @@ function setupCounters() {
 
   counters.forEach(function (el) {
     var target = parseFloat(el.dataset.countTo);
-    if (reduce) { render(el, target); return; }
+    if (reduce || !('IntersectionObserver' in window)) { render(el, target); return; }
     onFirstView(el, function () {
       var start = null;
       function step(timestamp) {
@@ -462,8 +462,13 @@ function setupRateSection(hostId, pairsId, attr, blocks, wanted) {
   }
   var pills = document.querySelectorAll('.ax-pill[data-' + attr + ']');
   pills.forEach(function (pill) {
+    pill.setAttribute('aria-pressed', String(pill.classList.contains('is-active')));
     pill.addEventListener('click', function () {
-      pills.forEach(function (p) { p.classList.toggle('is-active', p === pill); });
+      if (!blocks[pill.dataset[attr]]) return;
+      pills.forEach(function (p) {
+        p.classList.toggle('is-active', p === pill);
+        p.setAttribute('aria-pressed', String(p === pill));
+      });
       show(pill.dataset[attr]);
     });
   });
@@ -553,12 +558,170 @@ function setupResults() {
   }
 }
 
+/* ------------------------------------------------------------------
+   Rollout gallery, video handling, keyboard support, failure isolation
+   ------------------------------------------------------------------ */
+function escapeHtml(text) {
+  return String(text).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+
+function prefersReducedMotion() {
+  return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+}
+
+function playQuietly(video) {
+  var promise = video.play();
+  if (promise && promise.catch) promise.catch(function () { /* autoplay can be refused; controls stay available */ });
+}
+
+function showVideoFallback(video) {
+  var holder = video.closest('figure') || video.parentNode;
+  if (!holder || holder.querySelector('.ax-video-fallback:not([hidden])')) return;
+  var src = video.currentSrc || video.getAttribute('src') || '';
+  var note = document.createElement('p');
+  note.className = 'ax-video-fallback';
+  note.innerHTML = 'This rollout could not be played in your browser. ' +
+    (src ? '<a href="' + escapeHtml(src) + '">Download the MP4</a>.' : '');
+  holder.insertBefore(note, video.nextSibling);
+}
+
+function setupVideos() {
+  var videos = Array.prototype.slice.call(document.querySelectorAll('video'));
+  if (!videos.length) return;
+  var info = (window.AFFORDX && window.AFFORDX.videos) || {};
+  var reduce = prefersReducedMotion();
+  videos.forEach(function (video) {
+    video.muted = true;
+    var name = (video.getAttribute('src') || '').split('/').pop();
+    if (info[name] && info[name].poster && !video.getAttribute('poster')) video.setAttribute('poster', info[name].poster);
+    video.addEventListener('error', function () { showVideoFallback(video); });
+    if (reduce) {
+      video.removeAttribute('autoplay');
+      video.autoplay = false;
+      video.controls = true;
+      video.pause();
+    }
+  });
+  if (reduce || !('IntersectionObserver' in window)) return;
+  var observer = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting && entry.target.getAttribute('src')) playQuietly(entry.target);
+      else entry.target.pause();
+    });
+  }, { threshold: 0.25 });
+  videos.forEach(function (video) {
+    video.removeAttribute('autoplay');
+    observer.observe(video);
+  });
+}
+
+function setupGallery() {
+  var data = window.AFFORDX;
+  var root = document.getElementById('ax-gallery');
+  if (!root || !data || !data.gallery || !data.gallery.length) return;
+  var items = data.gallery;
+  var pillHost = document.getElementById('ax-gallery-pills');
+  var video = document.getElementById('ax-gallery-video');
+  var caption = document.getElementById('ax-gallery-caption');
+  var fallback = document.getElementById('ax-gallery-fallback');
+  var groups = [];
+  var byGroup = {};
+  items.forEach(function (item, i) {
+    if (!byGroup[item.group]) { byGroup[item.group] = []; groups.push(item.group); }
+    byGroup[item.group].push(i);
+  });
+  pillHost.innerHTML = groups.map(function (group) {
+    return '<div class="ax-gallery-group"><span class="ax-gallery-group-name">' + escapeHtml(group) + '</span>' +
+      '<div class="ax-pills ax-pills-left" role="group" aria-label="' + escapeHtml(group) + ' rollouts">' +
+      byGroup[group].map(function (i) {
+        return '<button class="ax-pill" type="button" data-gallery="' + i + '" aria-pressed="false">' +
+          escapeHtml(items[i].label) + '</button>';
+      }).join('') + '</div></div>';
+  }).join('');
+  var buttons = Array.prototype.slice.call(pillHost.querySelectorAll('[data-gallery]'));
+  var current = 0;
+
+  function show(index, fromUser) {
+    current = (index + items.length) % items.length;
+    var item = items[current];
+    buttons.forEach(function (b) {
+      var on = Number(b.dataset.gallery) === current;
+      b.classList.toggle('is-active', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
+    if (fallback) fallback.hidden = true;
+    var stale = root.querySelectorAll('.ax-video-fallback:not(#ax-gallery-fallback)');
+    Array.prototype.forEach.call(stale, function (node) { node.remove(); });
+    video.setAttribute('poster', item.poster);
+    video.setAttribute('src', item.video);
+    video.setAttribute('aria-label', 'Successful AFFORD-X rollout: ' + item.instruction);
+    caption.innerHTML = '<span class="ax-outcome is-success"><i class="fas fa-check"></i> succeeds</span> <b>' +
+      escapeHtml(item.group + ' · ' + item.label) + '</b> &middot; ' + escapeHtml(item.scene) +
+      (item.instruction ? '<br><em>' + escapeHtml(item.instruction) + '</em>' : '');
+    if (fromUser && !prefersReducedMotion()) playQuietly(video);
+  }
+
+  buttons.forEach(function (b) {
+    b.addEventListener('click', function () { show(Number(b.dataset.gallery), true); });
+  });
+  var prev = document.getElementById('ax-gallery-prev');
+  var next = document.getElementById('ax-gallery-next');
+  if (prev) prev.addEventListener('click', function () { show(current - 1, true); });
+  if (next) next.addEventListener('click', function () { show(current + 1, true); });
+  root.addEventListener('keydown', function (event) {
+    if (event.target.closest && event.target.closest('.ax-pills')) return;   // pill groups handle their own arrows
+    if (event.key === 'ArrowRight') { show(current + 1, true); event.preventDefault(); }
+    if (event.key === 'ArrowLeft') { show(current - 1, true); event.preventDefault(); }
+  });
+  show(0, false);
+}
+
+function setupPillKeys() {
+  document.addEventListener('keydown', function (event) {
+    if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
+    var pill = event.target.closest && event.target.closest('.ax-pills .ax-pill');
+    if (!pill) return;
+    var group = Array.prototype.slice.call(pill.parentNode.querySelectorAll('.ax-pill'));
+    var step = event.key === 'ArrowRight' ? 1 : -1;
+    var target = group[(group.indexOf(pill) + step + group.length) % group.length];
+    target.focus();
+    target.click();
+    event.preventDefault();
+  });
+}
+
+function setupDataNotice() {
+  if (window.AFFORDX) return;
+  ['ax-libero', 'ax-mw', 'ax-proposer', 'ax-cands', 'ax-gallery'].forEach(function (id) {
+    var host = document.getElementById(id);
+    if (!host) return;
+    var note = document.createElement('p');
+    note.className = 'ax-data-notice';
+    note.textContent = 'The interactive results could not load (static/js/affordx_data.js is missing). The figures and text remain valid.';
+    host.appendChild(note);
+  });
+}
+
+function safe(name, fn) {
+  try {
+    fn();
+  } catch (err) {
+    if (window.console && console.warn) console.warn('AFFORD-X page: ' + name + ' did not initialise', err);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', function () {
-  setupNav();
-  setupCounters();
-  setupTabs();
-  setupLightbox();
-  setupStages();
-  setupExplorer();
-  setupResults();
+  safe('navigation', setupNav);
+  safe('counters', setupCounters);
+  safe('tabs', setupTabs);
+  safe('lightbox', setupLightbox);
+  safe('pipeline stages', setupStages);
+  safe('replay explorer', setupExplorer);
+  safe('results', setupResults);
+  safe('rollout gallery', setupGallery);
+  safe('videos', setupVideos);
+  safe('keyboard', setupPillKeys);
+  safe('data notice', setupDataNotice);
 });
