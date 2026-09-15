@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Hammer handle points in 3D: the geometric partition and SAM3 masks lifted through depth, and the functional score each gives the 16 grasp candidates.">
+<meta name="description" content="Handle points in 3D for the hammer and wrench pilot scenes: the geometric partition and SAM3 masks lifted through depth, and the functional score each gives every grasp candidate.">
 <link rel="icon" type="image/png" href="static/images/robot.png">
-<title>Hammer Handle Points</title>
+<title>Handle Points in 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
@@ -21,7 +21,7 @@
     --select: #5B4B9A;
     --viewport: #F4F7F6;
     --handle: #E69F00;
-    --head: #3E9FD6;
+    --part2: #3E9FD6;
     --rest: #7F8C99;
     --pass: #2B7A57;
     --fail: #A9432F;
@@ -34,6 +34,7 @@
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; }
+  [hidden] { display: none !important; }
   body {
     background: var(--ground);
     color: var(--ink);
@@ -86,7 +87,10 @@
   .legend .ring { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--select); flex: none; }
   .legend .shell { width: 14px; height: 14px; border-radius: 50%; border: 1px dashed var(--accent); flex: none; background: var(--on); }
   .legend .ends { font: 400 11px var(--mono); color: var(--muted); }
-  .vp-error { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--muted); }
+  .vp-status {
+    position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center;
+    color: var(--muted); background: var(--viewport);
+  }
 
   .frames { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   @media (max-width: 520px) { .frames { grid-template-columns: 1fr; } }
@@ -170,20 +174,20 @@
   <header class="top">
     <div>
       <a class="back" href="./#handle-points" target="_top">AFFORD-X project page</a>
-      <p class="kicker" id="kicker">Meta-World hammer-v3</p>
-      <h1>Hammer Handle Points</h1>
+      <p class="kicker" id="kicker">Meta-World pilot scenes</p>
+      <h1>Handle Points in 3D</h1>
     </div>
     <p class="lede">
       The functional term scores a grasp by its distance <code>d</code> to the nearest handle point:
-      <strong>1 within 3 cm, falling to 0 at 8 cm</strong>. The handle points come from one of two sources. Switch
-      between them on the same scene and watch the head grasps.
+      <strong>1 within 3 cm, falling to 0 at 8 cm</strong>. The handle points come from one of two sources. Pick an
+      object, switch the source on the same scene, and compare how the grasps on the other part score.
     </p>
   </header>
 
   <main class="app">
     <div class="left">
       <div class="viewport" id="viewport">
-        <canvas id="gl" aria-label="Orbitable point cloud of the hammer scene with handle points and grasp candidates"></canvas>
+        <canvas id="gl" aria-label="Orbitable point cloud of the scene with handle points and grasp candidates"></canvas>
         <div class="vp-hint">drag to orbit · scroll to zoom · right-drag to pan</div>
         <div class="vp-tools">
           <button type="button" id="view-camera">Render camera view</button>
@@ -191,11 +195,12 @@
           <button type="button" id="view-top">Top view</button>
         </div>
         <div class="legend" id="legend"></div>
+        <div class="vp-status" id="vp-status" hidden></div>
       </div>
 
       <div class="frames">
         <figure>
-          <div class="imgwrap" id="wrap-rgb" tabindex="0"><img id="img-rgb" alt="RGB render of the hammer scene"><div class="cross" id="cross-rgb" hidden></div></div>
+          <div class="imgwrap" id="wrap-rgb" tabindex="0"><img id="img-rgb" alt="RGB render of the scene"><div class="cross" id="cross-rgb" hidden></div></div>
           <figcaption>RGB pass <span id="cap-rgb"></span></figcaption>
         </figure>
         <figure>
@@ -206,7 +211,7 @@
 
       <section aria-labelledby="cand-title">
         <div class="section-head">
-          <h2 id="cand-title">The 16 grasp candidates <span id="cand-meta"></span></h2>
+          <h2 id="cand-title">Grasp candidates <span id="cand-meta"></span></h2>
           <p>Distance to the nearest handle point and the functional score it gives, for both sources.</p>
         </div>
         <div class="tablewrap">
@@ -227,6 +232,17 @@
 
     <aside class="rail" aria-label="Controls">
       <div class="group">
+        <h2>Object</h2>
+        <div class="seg" id="objects"></div>
+      </div>
+
+      <div class="group">
+        <h2>Episode</h2>
+        <div class="seg" id="episodes"></div>
+        <p class="note" id="instruction"></p>
+      </div>
+
+      <div class="group">
         <h2>Handle points from</h2>
         <div class="seg" id="sources">
           <button type="button" data-src="geometric" aria-pressed="true">Geometric partition<small>reported results</small></button>
@@ -238,12 +254,6 @@
       <div class="group">
         <h2>What each source does <span id="compare-ep"></span></h2>
         <table class="compare" id="compare"></table>
-      </div>
-
-      <div class="group">
-        <h2>Episode</h2>
-        <div class="seg" id="episodes"></div>
-        <p class="note" id="instruction"></p>
       </div>
 
       <div class="group">
@@ -260,7 +270,7 @@
           <button type="button" data-mode="labels" aria-pressed="false">True parts</button>
         </div>
         <div class="checks">
-          <label><input type="checkbox" id="show-parts" checked> Handle points of the chosen source</label>
+          <label><input type="checkbox" id="show-parts" checked> Part points of the chosen source</label>
           <label><input type="checkbox" id="show-cands" checked> Grasp candidates</label>
           <label><input type="checkbox" id="show-frustum" checked> Render camera</label>
         </div>
@@ -283,7 +293,7 @@
     <div>
       <h3>From pixel to point</h3>
       <p>Pixel (u, v) with depth z is scaled by the intrinsics and moved into the world by the camera pose, as in
-        <code>affordx.rendering.camera.lift</code>. The scene shows every second pixel within 1 m of the hammer.</p>
+        <code>affordx.rendering.camera.lift</code>. The scene shows every third pixel within 1 m of the object.</p>
       <p class="formula" id="formula"></p>
     </div>
     <div>
@@ -293,23 +303,26 @@
   </section>
 </div>
 
-<script src="static/js/handle_points_data.js"></script>
+<script src="static/js/handle_points/handle_points_index.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
 (function () {
   "use strict";
-  var D = window.LIFT;
+  var DATA_BASE = "static/js/handle_points/";
+  var I = window.LIFT_INDEX;
   var root = document.documentElement;
   var $ = function (id) { return document.getElementById(id); };
   var tok = function (name) { return getComputedStyle(root).getPropertyValue(name).trim(); };
-  if (!D) { $("readout-title").textContent = "The data file did not load, so there is nothing to show."; return; }
+  if (!I) { $("readout-title").textContent = "The data index did not load, so there is nothing to show."; return; }
+  window.LIFT_TASKS = window.LIFT_TASKS || {};
 
+  var T = null;
+  var rIn = I.rule.r_in, rOut = I.rule.r_out;
   var SRC = {
-    geometric: { name: "Geometric partition", short: "geometric", tag: "reported", other: "rest of the object cloud", otherTok: "--rest" },
-    sam3: { name: "SAM3 through depth", short: "SAM3", tag: "pilot", other: "SAM3 head mask", otherTok: "--head" }
+    geometric: { short: "geometric", other: function () { return "rest of the object cloud"; }, otherTok: "--rest" },
+    sam3: { short: "SAM3", other: function () { return "SAM3 " + T.other + " mask"; }, otherTok: "--part2" }
   };
-  var rIn = D.rule.r_in, rOut = D.rule.r_out;
 
   var VIR = ["#440154", "#472d7b", "#3b528b", "#2c728e", "#21918c", "#28ae80", "#5ec962", "#addc30", "#fde725"].map(hexRgb);
   function hexRgb(h) {
@@ -337,9 +350,11 @@
   }
   function num(x, d) { return (x < 0 ? "−" : "") + Math.abs(x).toFixed(d); }
   function cm(x) { return num(x * 100, 1) + " cm"; }
+  function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
-  var state = { ep: 0, src: "geometric", mode: "rgb", parts: true, cands: true, frustum: true, size: 1, active: null };
-  var cur = function () { return D.episodes[state.ep]; };
+  var state = { task: I.tasks[0].task, ep: 0, src: "geometric", mode: "rgb", parts: true, cands: true, frustum: true, size: 1, active: null };
+  var cur = function () { return T.episodes[state.ep]; };
+  var pointSize = function (ep) { return 0.0021 * ep.stride * state.size; };
 
   function prepare(ep) {
     if (ep._p) return ep._p;
@@ -408,13 +423,11 @@
     }).observe($("viewport"));
     (function loop() { controls.update(); renderer.render(scene, camera); requestAnimationFrame(loop); })();
   } else {
-    var msg = document.createElement("div");
-    msg.className = "vp-error";
-    msg.textContent = "The 3D view needs WebGL and three.js from cdnjs, and one of them is unavailable here. The images and tables still work.";
-    $("viewport").appendChild(msg);
+    status("The 3D view needs WebGL and three.js from cdnjs, and one of them is unavailable here. The images and tables still work.");
     $("gl").hidden = true;
   }
 
+  function status(text) { $("vp-status").textContent = text || ""; $("vp-status").hidden = !text; }
   function disposeObj(o) { if (!o) return; scene.remove(o); o.geometry.dispose(); o.material.dispose(); }
 
   function buildCloud() {
@@ -423,7 +436,7 @@
     var geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.BufferAttribute(P.pos, 3));
     geo.setAttribute("color", new THREE.BufferAttribute(new Float32Array(ep.n * 3), 3));
-    cloud = new THREE.Points(geo, new THREE.PointsMaterial({ size: 0.0042 * state.size, vertexColors: true }));
+    cloud = new THREE.Points(geo, new THREE.PointsMaterial({ size: pointSize(ep), vertexColors: true }));
     scene.add(cloud);
     var c = ep.cam.pos, k = ep.cam.corners, seq = [0, 1, 3, 2], v = [];
     seq.forEach(function (a, i) {
@@ -453,7 +466,7 @@
   function paint() {
     if (!has3D || !cloud) return;
     var ep = cur(), P = prepare(ep), out = cloud.geometry.attributes.color.array;
-    var bg = hexRgb(tok("--viewport")), H = hexRgb(tok("--handle")), Hd = hexRgb(tok("--head"));
+    var bg = hexRgb(tok("--viewport")), H = hexRgb(tok("--handle")), O = hexRgb(tok("--part2"));
     var lo = ep.depthRange[0], span = ep.depthRange[1] - ep.depthRange[0], dim = state.parts ? 0.45 : 0;
     for (var i = 0; i < ep.n; i++) {
       var r = P.col[3 * i] / 255, g = P.col[3 * i + 1] / 255, b = P.col[3 * i + 2] / 255, o;
@@ -461,7 +474,7 @@
       else if (state.mode === "depth") o = viridis(1 - (P.dep[i] - lo) / span);
       else {
         var l = 0.3 * r + 0.59 * g + 0.11 * b;
-        o = (P.lab[i] & 1) ? H : (P.lab[i] & 2) ? Hd : [bg[0] * 0.5 + l * 0.5, bg[1] * 0.5 + l * 0.5, bg[2] * 0.5 + l * 0.5];
+        o = (P.lab[i] & 1) ? H : (P.lab[i] & 2) ? O : [bg[0] * 0.5 + l * 0.5, bg[1] * 0.5 + l * 0.5, bg[2] * 0.5 + l * 0.5];
       }
       if (dim && state.mode !== "labels") o = [o[0] * (1 - dim) + bg[0] * dim, o[1] * (1 - dim) + bg[1] * dim, o[2] * (1 - dim) + bg[2] * dim];
       out[3 * i] = o[0]; out[3 * i + 1] = o[1]; out[3 * i + 2] = o[2];
@@ -522,13 +535,13 @@
       shellIn.material.color.set(tok("--accent"));
       shellOut.material.color.set(tok("--accent"));
       nearLine.material.color.set(tok("--ink"));
-      if (cloud) { paint(); buildParts(); buildCandidates(); }
+      if (cloud && T) { paint(); buildParts(); buildCandidates(); }
     }
-    renderLegend();
+    if (T) renderLegend();
   }
 
   function setView(kind) {
-    if (!has3D) return;
+    if (!has3D || !T) return;
     var ep = cur(), c = ep.cam.pos, f = ep.cam.forward, K = ep.K;
     var t = -(c[0] * f[0] + c[1] * f[1] + c[2] * f[2]);
     var target = new THREE.Vector3(c[0] + f[0] * t, c[1] + f[1] * t, c[2] + f[2] * t);
@@ -574,8 +587,8 @@
     readout("Scene point at pixel " + u + ", " + v, [
       ["Depth", num(P.dep[i], 3) + " m"],
       ["World x, y, z", [x + c0[0], y + c0[1], z + c0[2]].map(function (w) { return num(w, 3); }).join(", ") + " m"],
-      ["True part", (lab & 1) ? "handle" : (lab & 2) ? "head" : "not the hammer"],
-      ["In SAM3 mask", (lab & 4) ? "handle" : (lab & 8) ? "head" : "no"]
+      ["True part", (lab & 1) ? "handle" : (lab & 2) ? T.other : "not the " + T.object],
+      ["In SAM3 mask", (lab & 4) ? "handle" : (lab & 8) ? T.other : "no"]
     ]);
   }
 
@@ -601,6 +614,7 @@
   }
 
   function pickImage(e) {
+    if (!T) return;
     var ep = cur(), P = prepare(ep), r = e.currentTarget.getBoundingClientRect();
     var u = Math.min(ep.image[0] - 1, Math.max(0, Math.floor((e.clientX - r.left) / r.width * ep.image[0])));
     var v = Math.min(ep.image[1] - 1, Math.max(0, Math.floor((e.clientY - r.top) / r.height * ep.image[1])));
@@ -608,7 +622,7 @@
     if (pt >= 0) { showPoint(pt); return; }
     setCross(gu * ep.stride, gv * ep.stride);
     if (has3D) marker.visible = false;
-    readout("Pixel " + gu * ep.stride + ", " + gv * ep.stride, [["In the 3D scene", "no, farther than " + ep.radius.toFixed(1) + " m from the hammer"]]);
+    readout("Pixel " + gu * ep.stride + ", " + gv * ep.stride, [["In the 3D scene", "no, farther than " + ep.radius.toFixed(1) + " m from the " + T.object]]);
   }
   ["wrap-rgb", "wrap-depth"].forEach(function (id) { $(id).addEventListener("pointermove", pickImage); });
 
@@ -620,7 +634,7 @@
     });
     var pick = function () {
       queued = false;
-      if (!pending || pending.buttons) return;
+      if (!pending || pending.buttons || !T || !cloud) return;
       var r = renderer.domElement.getBoundingClientRect();
       ndc.set((pending.clientX - r.left) / r.width * 2 - 1, -((pending.clientY - r.top) / r.height) * 2 + 1);
       ray.setFromCamera(ndc, camera);
@@ -628,7 +642,7 @@
         var hc = ray.intersectObjects(pickables, false);
         if (hc.length) { showCandidate(hc[0].object.userData.cand); return; }
       }
-      ray.params.Points.threshold = 0.0035 * state.size;
+      ray.params.Points.threshold = 0.6 * pointSize(cur());
       var hp = ray.intersectObject(cloud, false);
       if (hp.length) showPoint(hp[0].index);
     };
@@ -637,12 +651,11 @@
   /* ---------- panels ---------- */
   function stats(ep, src) {
     var hs = ep.candidates.filter(function (c) { return c.part === "handle"; });
-    var hd = ep.candidates.filter(function (c) { return c.part === "head"; });
+    var os = ep.candidates.filter(function (c) { return c.part === T.other; });
     var mean = function (a) { return a.reduce(function (s, c) { return s + c.f[src]; }, 0) / Math.max(1, a.length); };
-    var s = ep.candidates[ep.selected[src]];
     return {
-      points: ep.sources[src].count[0], handleMean: mean(hs), headMean: mean(hd), nHandle: hs.length, nHead: hd.length,
-      headHigh: hd.filter(function (c) { return c.f[src] >= 0.5; }).length, sel: s
+      points: ep.sources[src].count[0], handleMean: mean(hs), otherMean: mean(os), nHandle: hs.length, nOther: os.length,
+      otherHigh: os.filter(function (c) { return c.f[src] >= 0.5; }).length, sel: ep.candidates[ep.selected[src]]
     };
   }
 
@@ -657,23 +670,23 @@
       '<th class="num' + (state.src === "sam3" ? " on" : "") + '" data-src="sam3" tabindex="0">SAM3<small>pilot</small></th></tr></thead><tbody>' +
       row("Handle points", g.points.toLocaleString("en-US"), s.points.toLocaleString("en-US")) +
       row("Mean f, handle grasps (" + g.nHandle + ")", num(g.handleMean, 2), num(s.handleMean, 2)) +
-      row("Mean f, head grasps (" + g.nHead + ")", num(g.headMean, 2), num(s.headMean, 2)) +
-      row("Head grasps with f ≥ 0.5", g.headHigh + " of " + g.nHead, s.headHigh + " of " + s.nHead) +
+      row("Mean f, " + T.other + " grasps (" + g.nOther + ")", num(g.otherMean, 2), num(s.otherMean, 2)) +
+      row(cap(T.other) + " grasps with f ≥ 0.5", g.otherHigh + " of " + g.nOther, s.otherHigh + " of " + s.nOther) +
       row("L3 selects", sel(g), sel(s)) +
       row("Its recorded rollout", g.sel.success ? "success" : "no success", s.sel.success ? "success" : "no success") +
       "</tbody>";
-    $("compare-ep").textContent = "episode " + ep.seed;
+    $("compare-ep").textContent = T.object + ", episode " + ep.seed;
   }
 
   function fcell(c, src) {
-    var v = c.f[src], rgb = viridis(v);
+    var v = c.f[src];
     return '<td class="num' + (state.src === src ? " on" : "") + '">' + num(v, 2) +
-      '<span class="fbar" aria-hidden="true"><i style="width:' + Math.round(v * 100) + "%;background:" + rgbCss(rgb) + '"></i></span></td>';
+      '<span class="fbar" aria-hidden="true"><i style="width:' + Math.round(v * 100) + "%;background:" + rgbCss(viridis(v)) + '"></i></span></td>';
   }
 
   function renderTable() {
     var ep = cur();
-    $("cand-meta").textContent = "L3 feasibility-first";
+    $("cand-meta").textContent = "K = " + ep.candidates.length + " · L3 feasibility-first";
     Array.prototype.forEach.call(document.querySelectorAll("th[data-col]"), function (th) {
       th.classList.toggle("on", th.dataset.col === state.src);
     });
@@ -694,13 +707,13 @@
     var ep = cur(), rows = [];
     if (state.parts) {
       rows.push('<div class="row"><span class="dot" style="background:var(--handle)"></span>handle points, ' +
-        SRC[state.src].short + '<span class="dot" style="background:var(' + SRC[state.src].otherTok + ');margin-left:6px"></span>' + SRC[state.src].other + "</div>");
+        SRC[state.src].short + '<span class="dot" style="background:var(' + SRC[state.src].otherTok + ');margin-left:6px"></span>' + SRC[state.src].other() + "</div>");
     }
     if (state.mode === "depth") {
       rows.push('<div class="row"><span class="bar" style="background:' + VIR_R_CSS + '"></span><span class="ends">scene depth ' +
         num(ep.depthRange[0], 2) + " to " + num(ep.depthRange[1], 2) + " m</span></div>");
     } else if (state.mode === "labels") {
-      rows.push('<div class="row"><span class="dot" style="background:var(--handle)"></span>true handle<span class="dot" style="background:var(--head);margin-left:6px"></span>true head</div>');
+      rows.push('<div class="row"><span class="dot" style="background:var(--handle)"></span>true handle<span class="dot" style="background:var(--part2);margin-left:6px"></span>true ' + T.other + "</div>");
     }
     if (state.cands && has3D) {
       rows.push('<div class="row"><span class="bar" style="background:' + VIR_CSS + '"></span><span class="ends">grasp colour = f, 0 to 1</span></div>');
@@ -713,17 +726,24 @@
   function renderSourceNote() {
     $("source-note").textContent = state.src === "geometric"
       ? "Points of the simulator's object cloud whose horizontal distance from the cloud centre exceeds the median by 1.5 standard deviations."
-      : "The SAM3 mask for “" + (D.prompts.handle || "handle") + "”, eroded by " + D.erode_px + " px and lifted through this frame's depth.";
+      : "The SAM3 mask for “" + (T.prompts.handle || "handle") + "”, eroded by " + I.erode_px + " px and lifted through this frame's depth.";
+  }
+
+  function renderEpisodeButtons() {
+    $("episodes").innerHTML = T.episodes.map(function (ep, i) {
+      return '<button type="button" data-ep="' + i + '" aria-pressed="' + (i === state.ep) + '">Episode ' + ep.seed + "</button>";
+    }).join("");
   }
 
   function renderEpisode() {
     var ep = cur();
     $("img-rgb").src = ep.rgb;
     $("img-depth").src = ep.depth;
+    $("img-rgb").alt = "RGB render of the " + T.object + " scene";
     $("cap-rgb").textContent = ep.image[0] + " × " + ep.image[1] + " px";
     $("cap-depth").textContent = "near " + num(ep.depthRange[0], 2) + " m, far " + num(ep.depthRange[1], 2) + " m";
-    $("kicker").textContent = "Meta-World " + D.task + " · episode " + ep.seed + " · " + ep.n.toLocaleString("en-US") + " scene points";
-    $("instruction").textContent = "“" + D.instruction + "”";
+    $("kicker").textContent = "Meta-World " + T.task + " · " + T.object + " · episode " + ep.seed + " · " + ep.n.toLocaleString("en-US") + " scene points";
+    $("instruction").textContent = "“" + T.instruction + "”";
     var K = ep.K;
     $("formula").innerHTML = "x = (u − " + num(K[0][2], 1) + ") z / " + num(K[0][0], 1) + "<br>" +
       "y = (v − " + num(K[1][2], 1) + ") z / " + num(K[1][1], 1) + "<br>" +
@@ -740,16 +760,46 @@
   function setSource(src) {
     state.src = src;
     Array.prototype.forEach.call($("sources").children, function (b) { b.setAttribute("aria-pressed", String(b.dataset.src === src)); });
+    if (!T) return;
     if (has3D) { buildParts(); buildCandidates(); }
     renderAll();
     showCandidate(cur().candidates[state.active === null ? cur().selected[src] : state.active]);
   }
 
-  $("episodes").innerHTML = D.episodes.map(function (ep, i) {
-    return '<button type="button" data-ep="' + i + '" aria-pressed="' + (i === 0) + '">Episode ' + ep.seed + "</button>";
+  function loadTask(task, done) {
+    if (window.LIFT_TASKS[task]) { done(window.LIFT_TASKS[task]); return; }
+    var meta = I.tasks.filter(function (t) { return t.task === task; })[0];
+    var el = document.createElement("script");
+    var fail = function () { status("Could not load " + meta.file + ". Reload the page to try again."); };
+    el.src = DATA_BASE + meta.file;
+    el.onload = function () { if (window.LIFT_TASKS[task]) done(window.LIFT_TASKS[task]); else fail(); };
+    el.onerror = fail;
+    document.body.appendChild(el);
+  }
+
+  function selectTask(task) {
+    var meta = I.tasks.filter(function (t) { return t.task === task; })[0];
+    state.task = task;
+    Array.prototype.forEach.call($("objects").children, function (b) { b.setAttribute("aria-pressed", String(b.dataset.task === task)); });
+    if (!window.LIFT_TASKS[task]) status("Loading the " + meta.object + " scenes");
+    loadTask(task, function (data) {
+      if (state.task !== task) return;
+      var first = T === null;
+      T = data; state.ep = 0; state.active = null;
+      status("");
+      renderEpisodeButtons();
+      renderEpisode();
+      setView("orbit");
+      if (first) retheme();
+    });
+  }
+
+  $("objects").innerHTML = I.tasks.map(function (t, i) {
+    return '<button type="button" data-task="' + t.task + '" aria-pressed="' + (i === 0) + '">' + cap(t.object) + "<small>" + t.task + "</small></button>";
   }).join("");
+  $("objects").addEventListener("click", function (e) { var b = e.target.closest("button"); if (b && b.dataset.task !== state.task) selectTask(b.dataset.task); });
   $("episodes").addEventListener("click", function (e) {
-    var b = e.target.closest("button"); if (!b) return;
+    var b = e.target.closest("button"); if (!b || !T) return;
     state.ep = Number(b.dataset.ep); state.active = null; renderEpisode();
   });
   $("sources").addEventListener("click", function (e) { var b = e.target.closest("button"); if (b) setSource(b.dataset.src); });
@@ -762,22 +812,23 @@
     var b = e.target.closest("button"); if (!b) return;
     state.mode = b.dataset.mode;
     Array.prototype.forEach.call($("modes").children, function (x) { x.setAttribute("aria-pressed", String(x === b)); });
-    paint(); renderLegend();
+    if (T) { paint(); renderLegend(); }
   });
   $("cands").addEventListener("click", function (e) { var tr = e.target.closest("tr"); if (tr) showCandidate(cur().candidates[Number(tr.dataset.i)]); });
   $("cands").addEventListener("keydown", function (e) {
     var tr = e.target.closest("tr");
     if (tr && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); showCandidate(cur().candidates[Number(tr.dataset.i)]); }
   });
-  $("show-parts").addEventListener("change", function (e) { state.parts = e.target.checked; applyLayers(); paint(); renderLegend(); });
+  $("show-parts").addEventListener("change", function (e) { state.parts = e.target.checked; applyLayers(); if (T) { paint(); renderLegend(); } });
   $("show-cands").addEventListener("change", function (e) {
-    state.cands = e.target.checked; applyLayers(); placeShells(state.active === null ? null : cur().candidates[state.active]); renderLegend();
+    state.cands = e.target.checked; applyLayers();
+    if (T) { placeShells(state.active === null ? null : cur().candidates[state.active]); renderLegend(); }
   });
   $("show-frustum").addEventListener("change", function (e) { state.frustum = e.target.checked; applyLayers(); });
   $("size").addEventListener("input", function (e) {
     state.size = Number(e.target.value);
     $("size-out").textContent = state.size.toFixed(state.size % 1 ? 2 : 1) + "×";
-    if (cloud) { cloud.material.size = 0.0042 * state.size; buildParts(); }
+    if (cloud && T) { cloud.material.size = pointSize(cur()); buildParts(); }
   });
   $("view-camera").addEventListener("click", function () { setView("camera"); });
   $("view-orbit").addEventListener("click", function () { setView("orbit"); });
@@ -785,16 +836,15 @@
   if (!has3D) { ["view-camera", "view-orbit", "view-top"].forEach(function (id) { $(id).hidden = true; }); }
 
   $("note-scope").textContent = "Every reported result takes handle points from the geometric partition of the simulator's object cloud. " +
-    "The SAM3 source ran in the earlier 11-task Meta-World pilot; there the task term still used the geometric partition. " +
-    "Both functional scores shown here are recomputed from the points and match the run log (" + D.run.split("/")[0] + ").";
+    "The SAM3 source ran in the earlier 11-task Meta-World pilot, where the task term kept the geometric partition. " +
+    "Only the hammer and the wrench have a handle region among the pilot objects. Both functional scores shown here are " +
+    "recomputed from the points and match the run log.";
 
   var mq = window.matchMedia("(prefers-color-scheme: dark)");
   if (mq.addEventListener) mq.addEventListener("change", retheme);
   new MutationObserver(retheme).observe(root, { attributes: true, attributeFilter: ["data-theme"] });
 
-  renderEpisode();
-  retheme();
-  setView("orbit");
+  selectTask(state.task);
 })();
 </script>
 </body>

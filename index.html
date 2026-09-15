@@ -682,18 +682,21 @@
       <p class="ai-section-intro">
         The functional term scores a grasp by its distance to the nearest handle point: 1 within 3&nbsp;cm, falling to 0
         at 8&nbsp;cm. Every reported result takes those points from a geometric partition of the simulator's object
-        cloud; the earlier pilot took them from SAM3 masks lifted through the rendered depth. Orbit a hammer scene,
-        switch the source and read each candidate's distance and score.
+        cloud; the earlier pilot took them from SAM3 masks lifted through the rendered depth. Among the eleven pilot
+        objects only the hammer and the wrench have a handle region. Pick one, orbit the scene, switch the source and
+        read each candidate's distance and score.
       </p>
       <div class="ax-embed">
-        <iframe id="ax-handle-points" src="handle-points.html" title="Hammer handle points in 3D" loading="lazy"></iframe>
+        <iframe id="ax-handle-points" src="handle-points.html" title="Handle points in 3D" loading="lazy"></iframe>
       </div>
       <p class="ai-table-note">
-        On all three episodes the geometric partition (54 points) gives no head grasp a functional score of 0.5 or more.
-        The lifted SAM3 handle mask (1,668 to 2,035 points) gives that score to 5 of 8, 4 of 7 and 4 of 7 head grasps,
-        because its points lie within 5.5&nbsp;cm of them. L3 selects a handle grasp with either source; the task term,
-        which rewards the handle through the geometric partition in both, is unchanged. Both functional scores are
-        recomputed from the points and equal the run log. <a href="handle-points.html">Open the viewer on its own page</a>.
+        On the three hammer episodes the geometric partition (54 points) gives no head grasp a functional score of 0.5
+        or more, while the lifted SAM3 handle mask (1,668 to 2,035 points) gives that score to 5 of 8, 4 of 7 and 4 of 7
+        head grasps. The wrench separates less cleanly with either source: across assembly and disassemble, 2 or 3 ring
+        grasps reach 0.5 with the geometric partition (102 points) and 3 with SAM3 (995 to 1,298 points). L3 selects a
+        handle grasp in all nine scenes with either source; the task term, which uses the geometric partition in both,
+        is unchanged. Both functional scores are recomputed from the points and equal the run log.
+        <a href="handle-points.html">Open the viewer on its own page</a>.
       </p>
     </div>
   </section>
