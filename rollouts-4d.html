@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="Recorded AFFORD-X rollouts replayed with a depth camera: SAM3-tracked object points coloured by distance to the gripper, with the grasp candidates and their scores, on Meta-World and LIBERO-PRO.">
+<meta name="color-scheme" content="dark">
 <link rel="icon" type="image/png" href="static/images/robot.png">
 <title>Rollouts in 4D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -11,26 +12,26 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
   :root {
-    --ground: #EDF0EF;
-    --surface: #F8FAF9;
-    --ink: #172023;
-    --muted: #56666B;
-    --rule: #D3DBDA;
-    --accent: #1F7F74;
-    --accent-ink: #FFFFFF;
-    --viewport: #F4F7F6;
-    --part1: #E69F00;
-    --part2: #3E9FD6;
-    --objrest: #C9A45C;
-    --gripper: #2B2F36;
-    --arm: #9AA5B1;
-    --select: #5B4B9A;
-    --pass: #2B7A57;
-    --overlay: rgba(248, 250, 249, 0.9);
+    --ground: #0D1214;
+    --surface: #131A1D;
+    --ink: #E1E9E9;
+    --muted: #8C9C9F;
+    --rule: #253135;
+    --accent: #4DBDAE;
+    --accent-ink: #06201C;
+    --viewport: #091012;
+    --part1: #F0B330;
+    --part2: #6CC0EE;
+    --objrest: #D8B770;
+    --gripper: #E8ECEE;
+    --arm: #6E7B86;
+    --select: #A493E6;
+    --pass: #5CC08F;
+    --overlay: rgba(19, 26, 29, 0.9);
     --display: "IBM Plex Sans Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
     --body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
     --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-    color-scheme: light;
+    color-scheme: dark;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; }
@@ -208,8 +209,8 @@
           <label><input type="checkbox" id="show-frustum"> Render camera</label>
         </div>
         <div class="seg" id="speeds">
-          <button type="button" data-speed="0.5" aria-pressed="false">0.5×</button>
-          <button type="button" data-speed="1" aria-pressed="true">1×</button>
+          <button type="button" data-speed="0.5" aria-pressed="true">0.5×</button>
+          <button type="button" data-speed="1" aria-pressed="false">1×</button>
           <button type="button" data-speed="2" aria-pressed="false">2×</button>
         </div>
         <div class="slider">
@@ -238,7 +239,7 @@
   window.ROLLOUTS_4D = window.ROLLOUTS_4D || {};
 
   var E = null, frames3d = [], current = -1;
-  var state = { ep: I.episodes[0].id, frame: 0, playing: false, speed: 1, size: 1, sam: true, grip: true, arm: true, stat: true, frustum: false, colour: "heat", cands: true };
+  var state = { ep: I.episodes[0].id, frame: 0, playing: false, speed: 0.5, size: 1, sam: true, grip: true, arm: true, stat: true, frustum: false, colour: "heat", cands: true };
   var FPS = 12;
   var HEAT_MAX = 0.10;
   var HEAT = ["#fb9b06", "#ed6925", "#cf4446", "#a52c60", "#781c6d", "#4a0c6b", "#1b0c41"].map(hexRgb);
