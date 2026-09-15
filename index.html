@@ -182,14 +182,14 @@
       <div class="hero-body">
         <figure class="ai-figure" style="margin-top:0">
           <img src="static/images/method_framework.png" class="ai-zoomable"
-               alt="The AFFORD-X framework on the Meta-World hammer scene: instruction and observation; a semantic proposer produces a typed intent and a candidate generator produces 16 grasps; SAM3 segments the handle and head; feasibility-first ranking selects a handle grasp, and keyframes show the selected interaction succeeding on Meta-World and on LIBERO-PRO Spatial">
+               alt="The AFFORD-X framework on the Meta-World hammer scene: instruction and observation; a semantic proposer produces a typed intent and a candidate generator produces 16 grasps; SAM3 segments the handle and head; feasibility-first ranking selects a handle grasp, and keyframes show the selected interaction succeeding on Meta-World and on LIBERO-PRO Spatial and Object">
           <figcaption>
             <strong>AFFORD-X on one pilot scene</strong> (Meta-World hammer, seed 0). <strong>Stage&nbsp;1:</strong>
             Gemini 3.8 Flash turns the instruction into a typed intent, and 16 top-down grasp candidates are generated
             (in this pilot, from simulator geometry). <strong>Stage&nbsp;2:</strong> SAM3 segments the parts the intent
             names, and the part masks feed the functional term beside feasibility, task compatibility and memory. <strong>Stage&nbsp;3:</strong> the feasibility-first rule removes what the arm cannot execute and
-            ranks the rest; the keyframes show the selected interaction succeeding on the Meta-World hammer scene and on a
-            LIBERO-PRO Spatial scene. Every image, mask, score and keyframe is read from logged runs, and no module is
+            ranks the rest; the keyframes show the selected interaction succeeding on the Meta-World hammer scene and on
+            LIBERO-PRO Spatial and Object scenes. Every image, mask, score and keyframe is read from logged runs, and no module is
             trained.
           </figcaption>
         </figure>
