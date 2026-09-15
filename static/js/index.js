@@ -215,17 +215,18 @@ function setupLightbox() {
    ------------------------------------------------------------------ */
 var STAGES = {
   propose: {
-    eyebrow: 'Component B · frozen',
-    title: 'The semantic proposer',
-    lead: 'A frozen language model reads the instruction and writes a typed intent.',
+    eyebrow: 'Component B',
+    title: 'The typed intent',
+    lead: 'A typed intent names what to interact with; every reported run takes it from the task definition.',
     body: 'The intent names the target, the interaction, the functional region, plan constraints and the next ' +
-      'action. A strict parser accepts exactly one well-formed object and never repairs it: anything else is ' +
-      'counted as an invalid program. The same backbone also serves as a baseline that picks a candidate directly, ' +
-      'so the value of the decision layer is measured against the proposer itself.',
-    spec: [['Model', 'gemini-3.8-flash'], ['Reasoning effort', 'high'], ['Retries', 'API errors only, bounded'], ['Parser repairs', 'none']]
+      'action. In the reported runs the task definition supplies it and a category prior names the functional ' +
+      'region. A frozen language model can write the same intent from the instruction: a strict parser accepts ' +
+      'exactly one well-formed object and never repairs it, and the same backbone serves as a baseline that picks a ' +
+      'candidate directly. That proposer is evaluated in its own pilot below.',
+    spec: [['Reported source', 'task definition'], ['Functional region', 'category prior'], ['Proposer (own pilot)', 'gemini-3.8-flash'], ['Parser repairs', 'none']]
   },
   candidates: {
-    eyebrow: 'Component A · frozen',
+    eyebrow: 'Component A · fixed',
     title: 'Candidate interactions',
     lead: 'K top-down grasp candidates, generated once per scene and shared by every method.',
     body: 'Candidate sets are content-hashed, so a comparison between methods is a comparison of selections from ' +
@@ -234,13 +235,15 @@ var STAGES = {
     spec: [['Meta-World K', 'up to 16'], ['LIBERO-PRO K', 'up to 12'], ['Pilot source', 'simulator geometry'], ['Shared across methods', 'yes, hashed']]
   },
   ground: {
-    eyebrow: 'Component D · frozen',
+    eyebrow: 'Component D',
     title: 'Ground the named parts',
-    lead: 'SAM3 segments the regions the intent names into part masks.',
-    body: 'Frames are rendered for every scene, segmented by text prompt on a GPU node and eroded by two pixels at ' +
-      'the mask boundary. A region SAM3 does not detect contributes no ' +
-      'points and scores every candidate neutrally. Mask quality is scored against the simulator’s own part labels.',
-    spec: [['Segmenter', 'SAM3 (frozen)'], ['Confidence threshold', '0.3'], ['Hammer-handle IoU', 'from the pilot'], ['Erosion', '2 px']]
+    lead: 'The named region becomes part points that score every candidate.',
+    body: 'In every reported run the points come from a geometric partition of the object’s simulator geometry. ' +
+      'The SAM3 path renders one RGB-D frame per scene, segments the named regions by text prompt on a GPU node, ' +
+      'erodes each mask by two pixels and lifts it through depth; a region SAM3 does not detect contributes no ' +
+      'points and scores every candidate neutrally. That path is evaluated in the earlier Meta-World pilot, with ' +
+      'mask quality scored against the simulator’s own part labels.',
+    spec: [['Reported source', 'geometric part partition'], ['SAM3 path', 'earlier Meta-World pilot'], ['SAM3 confidence threshold', '0.3'], ['Mask erosion', '2 px']]
   },
   select: {
     eyebrow: 'Component F · ours',
@@ -253,7 +256,7 @@ var STAGES = {
     spec: [['Gate', 'r · a · c ≥ 0.5'], ['Combination', 'product'], ['Trainable parameters', '0'], ['Ladder', 'L0 to L4, 2 × 2 each']]
   },
   execute: {
-    eyebrow: 'Component G · frozen',
+    eyebrow: 'Component G · fixed',
     title: 'Execute and record',
     lead: 'A scripted executor carries out the selection; the benchmark decides success.',
     body: 'Meta-World uses a mocap-driven 4-DoF Sawyer executor and LIBERO-PRO an operational-space Franka ' +

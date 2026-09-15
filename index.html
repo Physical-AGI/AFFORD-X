@@ -18,7 +18,7 @@
   <meta property="og:description" content="Remove what the arm cannot execute, then rank by function and task. Counterfactual evaluation on identical candidate sets, pilot results with nulls, rollout videos.">
   <meta property="og:url" content="https://physical-agi.github.io/AFFORD-X/">
   <meta property="og:image" content="https://physical-agi.github.io/AFFORD-X/static/images/method_framework.png">
-  <meta property="og:image:alt" content="The AFFORD-X framework drawn on one pilot scene: instruction and observation, a semantic proposer and candidate generator, SAM3 part grounding, feasibility-first selection and successful rollout keyframes">
+  <meta property="og:image:alt" content="The AFFORD-X framework drawn on one pilot scene: instruction and RGB-D observation, task-definition intent and candidate generator, geometric part terms, feasibility-first selection and successful rollout keyframes; the Gemini proposer and SAM3 grounding are drawn hatched as implemented but in no reported result">
   <meta property="article:section" content="Robotics">
   <meta property="article:tag" content="robot manipulation">
   <meta property="article:tag" content="affordance">
@@ -79,7 +79,7 @@
       { "@type": "Person", "name": "Md Selim Sarowar" },
       { "@type": "Person", "name": "Sungho Kim" }
     ],
-    "description": "Explicit, feasibility-first interaction selection with SAM3 part grounding and a semantic proposer, evaluated counterfactually on identical candidate sets in LIBERO-PRO and Meta-World.",
+    "description": "Explicit, feasibility-first interaction selection over functional affordance and task compatibility, evaluated counterfactually on identical candidate sets in LIBERO-PRO and Meta-World.",
     "keywords": ["robot manipulation", "affordance grounding", "interaction selection", "zero-shot", "LIBERO-PRO", "Meta-World"],
     "isAccessibleForFree": true,
     "codeRepository": "https://github.com/Physical-AGI/AFFORD-X",
@@ -182,15 +182,16 @@
       <div class="hero-body">
         <figure class="ai-figure" style="margin-top:0">
           <img src="static/images/method_framework.png" class="ai-zoomable"
-               alt="The AFFORD-X framework on the Meta-World hammer scene: instruction and observation; a semantic proposer produces a typed intent and a candidate generator produces 16 grasps; SAM3 segments the handle and head; feasibility-first ranking selects a handle grasp, and keyframes show the selected interaction succeeding on Meta-World and on LIBERO-PRO Spatial and Object">
+               alt="The AFFORD-X framework on the Meta-World hammer scene: a language instruction and one RGB-D observation; solid components are in the reported configuration (task-definition intent, top-down grasp candidates on object geometry, geometric part partition, feasibility-first rule), hatched grey components (Gemini proposer, SAM3 grounding) are implemented but in no reported result; and recorded successful executions on Meta-World and LIBERO-PRO Spatial and Object">
           <figcaption>
-            <strong>AFFORD-X on one pilot scene</strong> (Meta-World hammer, seed 0). <strong>Stage&nbsp;1:</strong>
-            Gemini 3.8 Flash turns the instruction into a typed intent, and 16 top-down grasp candidates are generated
-            (in this pilot, from simulator geometry). <strong>Stage&nbsp;2:</strong> SAM3 segments the parts the intent
-            names, and the part masks feed the functional term beside feasibility, task compatibility and memory. <strong>Stage&nbsp;3:</strong> the feasibility-first rule removes what the arm cannot execute and
-            ranks the rest; the keyframes show the selected interaction succeeding on the Meta-World hammer scene and on
-            LIBERO-PRO Spatial and Object scenes. Every image, mask, score and keyframe is read from logged runs, and no module is
-            trained.
+            <strong>AFFORD-X on one pilot scene</strong> (Meta-World hammer, seed 0), scored with the reported
+            configuration. <strong>Solid</strong> components are in every reported result: the intent comes from the task
+            definition, 16 top-down grasp candidates are generated on simulator object geometry, the functional term uses a
+            geometric part partition, and the feasibility-first rule selects. <strong>Hatched grey</strong> components and
+            dashed arrows (the Gemini 3.8 Flash proposer, and SAM3 part grounding on the RGB-D observation with masks lifted
+            through depth) are implemented but in no reported result. <strong>Execute</strong> shows recorded successful
+            rollouts on Meta-World and LIBERO-PRO Spatial and Object. Every image, score and keyframe is read from logged
+            runs, and no module is trained.
           </figcaption>
         </figure>
       </div>
@@ -231,10 +232,11 @@
             <p>
               Direct action generation can commit to an interaction that is plausible, even stable, and still wrong
               for the task: a hammer held by its head, a bowl grasped where the fingers cannot close. AFFORD-X makes
-              that choice explicit and inspectable. A semantic proposer (Gemini 3.8 Flash) turns the instruction into a
-              typed intent, SAM3 grounds the object parts that intent names, and a <strong>feasibility-first</strong>
-              rule removes candidate interactions the embodiment cannot execute before functional affordance and task
-              compatibility rank the rest. No module is trained. Evaluation is counterfactual: every compared method
+              that choice explicit and inspectable. A typed intent names the target, the functional region and the next
+              action, and a <strong>feasibility-first</strong> rule removes candidate interactions the embodiment cannot
+              execute before functional affordance and task compatibility rank the rest. In every reported run the intent
+              comes from the task definition and the parts from a geometric partition; a semantic proposer (Gemini 3.8
+              Flash) and SAM3 part grounding are implemented and evaluated in separate pilots. No module is trained. Evaluation is counterfactual: every compared method
               ranks the same content-hashed candidate set, and every candidate is executed from the identical start
               state in the benchmark's own simulator, so a success difference is a difference in the selected
               interaction. In the pilot phase with a 7-DoF Franka on LIBERO-PRO under the position and task
@@ -260,14 +262,14 @@
     <div class="container is-max-desktop">
       <h2 class="title is-3 has-text-centered">From Instruction to Interaction</h2>
       <p class="ai-section-intro">
-        Five stages. Four are frozen off-the-shelf components; the selection rule is ours. Pick a stage.
+        Five stages; only the selection rule is ours, and nothing is trained. Pick a stage.
       </p>
 
       <div class="ai-loop">
         <div class="ai-loop-stages" role="tablist" aria-label="Pipeline stages">
           <button class="ai-stage" role="tab" aria-selected="true" data-stage="propose" style="--stage-c:var(--stage-agent)">
             <span class="ai-stage-num">B</span>
-            <span><span class="ai-stage-name">Propose</span><span class="ai-stage-sub">Frozen LM writes a typed intent</span></span>
+            <span><span class="ai-stage-name">Propose</span><span class="ai-stage-sub">Typed intent from the task definition</span></span>
           </button>
           <div class="ai-stage-arrow" role="presentation" aria-hidden="true"><i class="fas fa-arrow-down"></i></div>
           <button class="ai-stage" role="tab" aria-selected="false" data-stage="candidates" style="--stage-c:var(--stage-ground)">
@@ -277,7 +279,7 @@
           <div class="ai-stage-arrow" role="presentation" aria-hidden="true"><i class="fas fa-arrow-down"></i></div>
           <button class="ai-stage" role="tab" aria-selected="false" data-stage="ground" style="--stage-c:var(--stage-ground)">
             <span class="ai-stage-num">D</span>
-            <span><span class="ai-stage-name">Ground parts</span><span class="ai-stage-sub">SAM3 masks for the named parts</span></span>
+            <span><span class="ai-stage-name">Ground parts</span><span class="ai-stage-sub">Geometric part partition</span></span>
           </button>
           <div class="ai-stage-arrow" role="presentation" aria-hidden="true"><i class="fas fa-arrow-down"></i></div>
           <button class="ai-stage" role="tab" aria-selected="false" data-stage="select" style="--stage-c:var(--stage-select)">
@@ -330,14 +332,15 @@
         <div class="ai-note-grid">
           <div class="ai-note">
             <h3>Where the region comes from</h3>
-            <p>A category prior names the handle for handled tools and containers; the semantic proposer's intent can
-              name any region. Objects without a named region score every candidate neutrally.</p>
+            <p>A category prior names the handle for handled tools and containers, and it is the region source in every
+              reported run. The semantic proposer's intent can name any region and is evaluated in its own pilot. Objects
+              without a named region score every candidate neutrally.</p>
           </div>
           <div class="ai-note">
             <h3>Where the points come from</h3>
             <p><code>grasp_region:&lt;part&gt;</code> scores 1.0 within 3&nbsp;cm of the part's points, falling to 0 at
-              8&nbsp;cm. The part points come from SAM3 masks or, for the contrast specs, from a
-              geometric partition of the object cloud. The Meta-World pilot shows why this distinction matters.</p>
+              8&nbsp;cm. The reported runs take the part points from a geometric partition of the object cloud; the
+              earlier Meta-World pilot took them from SAM3 masks and shows why this distinction matters.</p>
           </div>
         </div>
       </div>
@@ -779,7 +782,7 @@ url    = {https://physical-agi.github.io/AFFORD-X/}
       <div class="content has-text-centered">
         <p>
           AFFORD-X evaluates on <a href="https://github.com/Farama-Foundation/Metaworld" target="_blank" rel="noopener">Meta-World</a>
-          and LIBERO-PRO, grounds parts with <a href="https://github.com/facebookresearch/sam3" target="_blank" rel="noopener">SAM3</a>,
+          and LIBERO-PRO, implements part grounding with <a href="https://github.com/facebookresearch/sam3" target="_blank" rel="noopener">SAM3</a>,
           and runs LIBERO-PRO through the <a href="https://github.com/capgym/cap-x" target="_blank" rel="noopener">CaP-X</a> runtime.
           This page is built from <a href="https://github.com/Physical-AGI/AFFORD-X" target="_blank" rel="noopener">Physical-AGI/AFFORD-X</a>,
           where the code will be released.
