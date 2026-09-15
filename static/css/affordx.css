@@ -57,3 +57,7 @@
 
 /* Pipeline walkthrough: stage name above its one-line description. */
 .ai-stage-name, .ai-stage-sub { display: block; }
+
+/* Handle points viewer (handle-points.html), sized to its content by setupEmbeds */
+.ax-embed { margin-top: 1.25rem; border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; background: #EDF0EF; }
+.ax-embed iframe { display: block; width: 100%; height: 2600px; border: 0; }

@@ -707,6 +707,28 @@ function setupDataNotice() {
   });
 }
 
+/* The handle-points viewer is same-origin, so its iframe takes the height of its content. */
+function setupEmbeds() {
+  var frame = document.getElementById('ax-handle-points');
+  if (!frame) return;
+  function fit() {
+    try {
+      var doc = frame.contentDocument;
+      if (doc && doc.body) frame.style.height = doc.documentElement.scrollHeight + 'px';
+    } catch (err) {
+      /* A cross-origin preview keeps the stylesheet height. */
+    }
+  }
+  frame.addEventListener('load', function () {
+    fit();
+    try {
+      if (window.ResizeObserver && frame.contentDocument) new ResizeObserver(fit).observe(frame.contentDocument.body);
+    } catch (err) {
+      /* A cross-origin preview keeps the stylesheet height. */
+    }
+  });
+}
+
 function safe(name, fn) {
   try {
     fn();
@@ -725,6 +747,7 @@ document.addEventListener('DOMContentLoaded', function () {
   safe('results', setupResults);
   safe('rollout gallery', setupGallery);
   safe('videos', setupVideos);
+  safe('embedded viewer', setupEmbeds);
   safe('keyboard', setupPillKeys);
   safe('data notice', setupDataNotice);
 });

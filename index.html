@@ -106,6 +106,7 @@
       <a href="#libero">LIBERO-PRO</a>
       <a href="#metaworld">Meta-World</a>
       <a href="#proposer">Proposer</a>
+      <a href="#handle-points">Handle points</a>
       <a href="#reporting">Reporting</a>
       <a href="#limits">Nulls &amp; limits</a>
       <a href="#bibtex">BibTeX</a>
@@ -670,6 +671,29 @@
         names the handle on hammer, assembly and disassemble and the body or top elsewhere, so on 8 of 11 tasks it adds
         no region beyond the category prior. Each decision is a single call: this is a semantic proposer, and the
         closed execute-observe-replan loop that &ldquo;agentic&rdquo; requires has not been evaluated.
+      </p>
+    </div>
+  </section>
+
+  <!-- Handle points in 3D -->
+  <section class="section" id="handle-points">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3 has-text-centered">Handle Points in 3D</h2>
+      <p class="ai-section-intro">
+        The functional term scores a grasp by its distance to the nearest handle point: 1 within 3&nbsp;cm, falling to 0
+        at 8&nbsp;cm. Every reported result takes those points from a geometric partition of the simulator's object
+        cloud; the earlier pilot took them from SAM3 masks lifted through the rendered depth. Orbit a hammer scene,
+        switch the source and read each candidate's distance and score.
+      </p>
+      <div class="ax-embed">
+        <iframe id="ax-handle-points" src="handle-points.html" title="Hammer handle points in 3D" loading="lazy"></iframe>
+      </div>
+      <p class="ai-table-note">
+        On all three episodes the geometric partition (54 points) gives no head grasp a functional score of 0.5 or more.
+        The lifted SAM3 handle mask (1,668 to 2,035 points) gives that score to 5 of 8, 4 of 7 and 4 of 7 head grasps,
+        because its points lie within 5.5&nbsp;cm of them. L3 selects a handle grasp with either source; the task term,
+        which rewards the handle through the geometric partition in both, is unchanged. Both functional scores are
+        recomputed from the points and equal the run log. <a href="handle-points.html">Open the viewer on its own page</a>.
       </p>
     </div>
   </section>

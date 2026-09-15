@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Hammer handle points in 3D: the geometric partition and SAM3 masks lifted through depth, and the functional score each gives the 16 grasp candidates.">
+<link rel="icon" type="image/png" href="static/images/robot.png">
+<title>Hammer Handle Points</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --ground: #EDF0EF;
+    --surface: #F8FAF9;
+    --ink: #172023;
+    --muted: #56666B;
+    --rule: #D3DBDA;
+    --accent: #1F7F74;
+    --accent-ink: #FFFFFF;
+    --select: #5B4B9A;
+    --viewport: #F4F7F6;
+    --handle: #E69F00;
+    --head: #3E9FD6;
+    --rest: #7F8C99;
+    --pass: #2B7A57;
+    --fail: #A9432F;
+    --on: rgba(31, 127, 116, 0.09);
+    --overlay: rgba(248, 250, 249, 0.9);
+    --display: "IBM Plex Sans Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+    --body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 400 14px/1.5 var(--body);
+    padding-inline: 20px;
+    padding-block: 22px 40px;
+  }
+  .wrap { max-width: 1320px; margin-inline: auto; display: grid; gap: 22px; }
+
+  header.top {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 12px 40px; align-items: end;
+    padding-bottom: 16px; border-bottom: 1px solid var(--rule);
+  }
+  .kicker { margin: 0 0 4px; font: 500 12px/1.4 var(--mono); color: var(--accent); }
+  h1 { margin: 0; font: 600 clamp(28px, 3.6vw, 40px)/1.05 var(--display); letter-spacing: -0.01em; text-wrap: balance; }
+  .lede { margin: 0; max-width: 66ch; color: var(--muted); }
+  .lede strong { color: var(--ink); font-weight: 500; }
+  .back { font: 500 12.5px var(--body); color: var(--accent); text-decoration: none; }
+  .back:hover { text-decoration: underline; }
+  @media (max-width: 820px) { header.top { grid-template-columns: 1fr; } }
+
+  .app { display: grid; grid-template-columns: minmax(0, 1fr) 350px; gap: 24px; align-items: start; }
+  @media (max-width: 980px) { .app { grid-template-columns: 1fr; } }
+  .left { display: grid; gap: 14px; min-width: 0; }
+
+  .viewport {
+    position: relative; height: clamp(380px, 62vh, 640px);
+    background: var(--viewport); border: 1px solid var(--rule); border-radius: 6px; overflow: hidden;
+  }
+  .viewport canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+  .viewport canvas:active { cursor: grabbing; }
+  .vp-tools { position: absolute; top: 10px; right: 10px; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+  .vp-tools button, .seg button {
+    font: 500 12.5px/1.2 var(--body); color: var(--ink); background: var(--overlay);
+    border: 1px solid var(--rule); border-radius: 4px; padding: 7px 10px; cursor: pointer;
+  }
+  .vp-tools button:hover, .seg button:hover { border-color: var(--accent); }
+  .vp-hint {
+    position: absolute; top: 12px; left: 12px; font: 400 11.5px/1.3 var(--mono); color: var(--muted);
+    background: var(--overlay); padding: 5px 7px; border-radius: 4px;
+  }
+  .legend {
+    position: absolute; left: 10px; bottom: 10px; display: grid; gap: 5px;
+    background: var(--overlay); border: 1px solid var(--rule); border-radius: 4px;
+    padding: 8px 10px; font-size: 12px; max-width: calc(100% - 20px);
+  }
+  .legend .row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+  .legend .bar { width: 84px; height: 8px; border-radius: 2px; flex: none; }
+  .legend .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .legend .ring { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--select); flex: none; }
+  .legend .shell { width: 14px; height: 14px; border-radius: 50%; border: 1px dashed var(--accent); flex: none; background: var(--on); }
+  .legend .ends { font: 400 11px var(--mono); color: var(--muted); }
+  .vp-error { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--muted); }
+
+  .frames { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 520px) { .frames { grid-template-columns: 1fr; } }
+  .frames figure { margin: 0; display: grid; gap: 6px; }
+  .imgwrap {
+    position: relative; aspect-ratio: 4 / 3; max-width: 100%; border-radius: 4px; overflow: hidden;
+    background: var(--viewport); cursor: crosshair; border: 1px solid var(--rule);
+  }
+  .imgwrap img { display: block; width: 100%; height: 100%; }
+  .cross { position: absolute; width: 22px; height: 22px; transform: translate(-50%, -50%); pointer-events: none; }
+  .cross::before, .cross::after { content: ""; position: absolute; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.55); }
+  .cross::before { left: 50%; top: 0; bottom: 0; width: 1.5px; transform: translateX(-50%); }
+  .cross::after { top: 50%; left: 0; right: 0; height: 1.5px; transform: translateY(-50%); }
+  figcaption { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; }
+  figcaption span { font: 400 12px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  .rail { display: grid; }
+  .group { padding-block: 14px; border-top: 1px solid var(--rule); display: grid; gap: 9px; }
+  .group:first-child { border-top: 0; padding-top: 0; }
+  h2 {
+    margin: 0; display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+    font: 600 12px/1.2 var(--display); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted);
+  }
+  h2 span { font: 400 11.5px var(--mono); text-transform: none; letter-spacing: 0; }
+  .seg { display: flex; flex-wrap: wrap; gap: 4px; }
+  .seg button { background: transparent; flex: 1 1 auto; text-align: center; }
+  .seg button small { display: block; font: 400 11px var(--mono); opacity: 0.85; margin-top: 2px; }
+  .seg button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .note { margin: 0; font-size: 12.5px; color: var(--muted); }
+  .checks { display: grid; gap: 7px; }
+  .checks label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .checks input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px; margin: 0; }
+  .slider { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; }
+  .slider input { accent-color: var(--accent); width: 100%; }
+  .slider output { font: 400 12px var(--mono); color: var(--muted); min-width: 3ch; text-align: right; }
+
+  table { width: 100%; border-collapse: collapse; font: 400 12.5px var(--mono); font-variant-numeric: tabular-nums; }
+  th { text-align: left; font: 500 11.5px/1.25 var(--body); color: var(--muted); padding: 5px 7px; border-bottom: 1px solid var(--rule); vertical-align: bottom; }
+  td { padding: 5px 7px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+  th.num, td.num { text-align: right; }
+  th.on, td.on { background: var(--on); }
+  table.compare td:first-child { font-family: var(--body); white-space: normal; color: var(--muted); }
+  table.compare th[data-src] { cursor: pointer; }
+  table.compare th small { display: block; font: 400 10.5px var(--mono); }
+  .tablewrap { overflow-x: auto; }
+  #cands tr { cursor: pointer; }
+  #cands tr:hover td { background: var(--surface); }
+  #cands tr.active td { box-shadow: inset 0 -2px 0 var(--accent); }
+  #cands tr.gated td:not(.on) { color: var(--muted); }
+  .chip { display: inline-block; font: 500 10.5px/1.5 var(--body); padding: 0 6px; border-radius: 3px; border: 1px solid currentColor; }
+  .chip.ok { color: var(--pass); }
+  .chip.no { color: var(--fail); }
+  .chip.sel { color: var(--accent-ink); background: var(--select); border-color: var(--select); }
+  .chip.gate { color: var(--muted); }
+  .fbar { display: inline-block; width: 38px; height: 6px; background: var(--rule); border-radius: 2px; margin-left: 6px; vertical-align: middle; overflow: hidden; }
+  .fbar i { display: block; height: 100%; }
+
+  dl.readout { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; }
+  dl.readout dt { color: var(--muted); font-size: 12.5px; }
+  dl.readout dd { margin: 0; font: 400 12.5px var(--mono); font-variant-numeric: tabular-nums; text-align: right; overflow-wrap: anywhere; }
+  .readout-title { font: 600 15px var(--display); margin: 0; }
+
+  .section-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .section-head p { margin: 0; font-size: 12.5px; color: var(--muted); }
+
+  .notes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; padding-top: 18px; border-top: 1px solid var(--rule); }
+  @media (max-width: 900px) { .notes { grid-template-columns: 1fr; } }
+  .notes h3 { margin: 0 0 6px; font: 600 16px/1.2 var(--display); }
+  .notes p { margin: 0 0 6px; color: var(--muted); max-width: 62ch; }
+  .notes code, .lede code { font: 400 12.5px var(--mono); color: var(--ink); }
+  .formula { font: 400 12.5px/1.6 var(--mono); color: var(--ink); margin: 6px 0 0; }
+
+  button:focus-visible, input:focus-visible, tr:focus-visible, th:focus-visible, .imgwrap:focus-visible, a:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <a class="back" href="./#handle-points" target="_top">AFFORD-X project page</a>
+      <p class="kicker" id="kicker">Meta-World hammer-v3</p>
+      <h1>Hammer Handle Points</h1>
+    </div>
+    <p class="lede">
+      The functional term scores a grasp by its distance <code>d</code> to the nearest handle point:
+      <strong>1 within 3 cm, falling to 0 at 8 cm</strong>. The handle points come from one of two sources. Switch
+      between them on the same scene and watch the head grasps.
+    </p>
+  </header>
+
+  <main class="app">
+    <div class="left">
+      <div class="viewport" id="viewport">
+        <canvas id="gl" aria-label="Orbitable point cloud of the hammer scene with handle points and grasp candidates"></canvas>
+        <div class="vp-hint">drag to orbit · scroll to zoom · right-drag to pan</div>
+        <div class="vp-tools">
+          <button type="button" id="view-camera">Render camera view</button>
+          <button type="button" id="view-orbit">Three-quarter view</button>
+          <button type="button" id="view-top">Top view</button>
+        </div>
+        <div class="legend" id="legend"></div>
+      </div>
+
+      <div class="frames">
+        <figure>
+          <div class="imgwrap" id="wrap-rgb" tabindex="0"><img id="img-rgb" alt="RGB render of the hammer scene"><div class="cross" id="cross-rgb" hidden></div></div>
+          <figcaption>RGB pass <span id="cap-rgb"></span></figcaption>
+        </figure>
+        <figure>
+          <div class="imgwrap" id="wrap-depth" tabindex="0"><img id="img-depth" alt="Depth render of the same frame, near is yellow"><div class="cross" id="cross-depth" hidden></div></div>
+          <figcaption>Depth pass <span id="cap-depth"></span></figcaption>
+        </figure>
+      </div>
+
+      <section aria-labelledby="cand-title">
+        <div class="section-head">
+          <h2 id="cand-title">The 16 grasp candidates <span id="cand-meta"></span></h2>
+          <p>Distance to the nearest handle point and the functional score it gives, for both sources.</p>
+        </div>
+        <div class="tablewrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th><th>true part</th><th class="num">gate r·a·c</th>
+                <th class="num" data-col="geometric">d, geometric</th><th class="num" data-col="geometric">f, geometric</th>
+                <th class="num" data-col="sam3">d, SAM3</th><th class="num" data-col="sam3">f, SAM3</th>
+                <th>recorded rollout</th>
+              </tr>
+            </thead>
+            <tbody id="cands"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <aside class="rail" aria-label="Controls">
+      <div class="group">
+        <h2>Handle points from</h2>
+        <div class="seg" id="sources">
+          <button type="button" data-src="geometric" aria-pressed="true">Geometric partition<small>reported results</small></button>
+          <button type="button" data-src="sam3" aria-pressed="false">SAM3 through depth<small>earlier pilot</small></button>
+        </div>
+        <p class="note" id="source-note"></p>
+      </div>
+
+      <div class="group">
+        <h2>What each source does <span id="compare-ep"></span></h2>
+        <table class="compare" id="compare"></table>
+      </div>
+
+      <div class="group">
+        <h2>Episode</h2>
+        <div class="seg" id="episodes"></div>
+        <p class="note" id="instruction"></p>
+      </div>
+
+      <div class="group">
+        <h2>Under the cursor</h2>
+        <p class="readout-title" id="readout-title"></p>
+        <dl class="readout" id="readout"></dl>
+      </div>
+
+      <div class="group">
+        <h2>Scene</h2>
+        <div class="seg" id="modes">
+          <button type="button" data-mode="rgb" aria-pressed="true">RGB</button>
+          <button type="button" data-mode="depth" aria-pressed="false">Depth</button>
+          <button type="button" data-mode="labels" aria-pressed="false">True parts</button>
+        </div>
+        <div class="checks">
+          <label><input type="checkbox" id="show-parts" checked> Handle points of the chosen source</label>
+          <label><input type="checkbox" id="show-cands" checked> Grasp candidates</label>
+          <label><input type="checkbox" id="show-frustum" checked> Render camera</label>
+        </div>
+        <div class="slider">
+          <label for="size">Point size</label>
+          <input type="range" id="size" min="0.5" max="3" step="0.25" value="1">
+          <output id="size-out" for="size">1.0×</output>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <section class="notes" aria-label="How the points are made">
+    <div>
+      <h3>How depth is rendered</h3>
+      <p>No camera is added to the model. A MuJoCo free camera is placed in Python and one offscreen renderer draws
+        the same simulator state twice, a colour pass and then a depth pass in metres along the optical axis. The
+        depth is noiseless and has no dropouts.</p>
+    </div>
+    <div>
+      <h3>From pixel to point</h3>
+      <p>Pixel (u, v) with depth z is scaled by the intrinsics and moved into the world by the camera pose, as in
+        <code>affordx.rendering.camera.lift</code>. The scene shows every second pixel within 1 m of the hammer.</p>
+      <p class="formula" id="formula"></p>
+    </div>
+    <div>
+      <h3>Which source the numbers use</h3>
+      <p id="note-scope"></p>
+    </div>
+  </section>
+</div>
+
+<script src="static/js/handle_points_data.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function () {
+  "use strict";
+  var D = window.LIFT;
+  var root = document.documentElement;
+  var $ = function (id) { return document.getElementById(id); };
+  var tok = function (name) { return getComputedStyle(root).getPropertyValue(name).trim(); };
+  if (!D) { $("readout-title").textContent = "The data file did not load, so there is nothing to show."; return; }
+
+  var SRC = {
+    geometric: { name: "Geometric partition", short: "geometric", tag: "reported", other: "rest of the object cloud", otherTok: "--rest" },
+    sam3: { name: "SAM3 through depth", short: "SAM3", tag: "pilot", other: "SAM3 head mask", otherTok: "--head" }
+  };
+  var rIn = D.rule.r_in, rOut = D.rule.r_out;
+
+  var VIR = ["#440154", "#472d7b", "#3b528b", "#2c728e", "#21918c", "#28ae80", "#5ec962", "#addc30", "#fde725"].map(hexRgb);
+  function hexRgb(h) {
+    h = h.replace("#", "");
+    var n = parseInt(h, 16);
+    return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255];
+  }
+  function viridis(t) {
+    t = Math.min(1, Math.max(0, t));
+    var x = t * 8, i = Math.min(7, Math.floor(x)), f = x - i, a = VIR[i], b = VIR[i + 1];
+    return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f];
+  }
+  function rgbCss(c) { return "rgb(" + c.map(function (v) { return Math.round(v * 255); }).join(",") + ")"; }
+  var VIR_CSS = "linear-gradient(90deg," + VIR.map(rgbCss).join(",") + ")";
+  var VIR_R_CSS = "linear-gradient(90deg," + VIR.slice().reverse().map(rgbCss).join(",") + ")";
+  function bytes(s) {
+    var bin = atob(s), u = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    return u;
+  }
+  function metres(s) {
+    var q = new Int16Array(bytes(s).buffer), out = new Float32Array(q.length);
+    for (var i = 0; i < q.length; i++) out[i] = q[i] / 1000;
+    return out;
+  }
+  function num(x, d) { return (x < 0 ? "−" : "") + Math.abs(x).toFixed(d); }
+  function cm(x) { return num(x * 100, 1) + " cm"; }
+
+  var state = { ep: 0, src: "geometric", mode: "rgb", parts: true, cands: true, frustum: true, size: 1, active: null };
+  var cur = function () { return D.episodes[state.ep]; };
+
+  function prepare(ep) {
+    if (ep._p) return ep._p;
+    var n = ep.n, pos = metres(ep.pos), keep = bytes(ep.keep), gw = ep.grid[0], gh = ep.grid[1];
+    var pix2pt = new Int32Array(gw * gh).fill(-1), pt2pix = new Uint32Array(n), k = 0;
+    for (var g = 0; g < gw * gh; g++) {
+      if ((keep[g >> 3] >> (g & 7)) & 1) { pix2pt[g] = k; pt2pix[k] = g; k++; }
+    }
+    if (k !== n) throw new Error("point count and pixel mask disagree");
+    var c = ep.cam.pos, f = ep.cam.forward, dep = new Float32Array(n);
+    for (var j = 0; j < n; j++) {
+      dep[j] = (pos[3 * j] - c[0]) * f[0] + (pos[3 * j + 1] - c[1]) * f[1] + (pos[3 * j + 2] - c[2]) * f[2];
+    }
+    var parts = {};
+    Object.keys(ep.sources).forEach(function (s) {
+      parts[s] = { handle: metres(ep.sources[s].handle), other: metres(ep.sources[s].other) };
+    });
+    ep._p = { pos: pos, col: bytes(ep.col), lab: bytes(ep.lab), dep: dep, pix2pt: pix2pt, pt2pix: pt2pix, gw: gw, parts: parts };
+    return ep._p;
+  }
+
+  /* ---------- 3D ---------- */
+  var has3D = !!(window.THREE && THREE.OrbitControls);
+  var renderer, scene, camera, controls, cloud, handlePts, otherPts, candGroup, frustum, selRing, marker, shellIn, shellOut, nearLine;
+  var pickables = [];
+  if (has3D) {
+    try { renderer = new THREE.WebGLRenderer({ canvas: $("gl"), antialias: true }); } catch (err) { has3D = false; }
+  }
+  if (has3D) {
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(45, 1, 0.01, 20);
+    camera.up.set(0, 0, 1);
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.12;
+    candGroup = new THREE.Group();
+    scene.add(candGroup);
+
+    var ringTex = (function () {
+      var cv = document.createElement("canvas"); cv.width = cv.height = 128;
+      var x = cv.getContext("2d"); x.lineWidth = 12; x.strokeStyle = "#ffffff";
+      x.beginPath(); x.arc(64, 64, 50, 0, Math.PI * 2); x.stroke();
+      return new THREE.CanvasTexture(cv);
+    })();
+    var ring = function (scale) {
+      var s = new THREE.Sprite(new THREE.SpriteMaterial({ map: ringTex, depthTest: false, transparent: true }));
+      s.scale.set(scale, scale, 1); s.renderOrder = 6; return s;
+    };
+    selRing = ring(0.038); scene.add(selRing);
+    marker = ring(0.024); marker.visible = false; scene.add(marker);
+    shellIn = new THREE.Mesh(new THREE.SphereGeometry(rIn, 32, 16), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.12, depthWrite: false }));
+    shellOut = new THREE.Mesh(new THREE.SphereGeometry(rOut, 28, 14), new THREE.MeshBasicMaterial({ wireframe: true, transparent: true, opacity: 0.09, depthWrite: false }));
+    shellIn.renderOrder = shellOut.renderOrder = 4;
+    scene.add(shellIn); scene.add(shellOut);
+    nearLine = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ depthTest: false, transparent: true }));
+    nearLine.renderOrder = 7; scene.add(nearLine);
+    frustum = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ transparent: true, opacity: 0.8 }));
+    scene.add(frustum);
+
+    new ResizeObserver(function () {
+      var r = $("viewport").getBoundingClientRect();
+      renderer.setSize(r.width, r.height, false);
+      camera.aspect = r.width / Math.max(1, r.height);
+      camera.updateProjectionMatrix();
+    }).observe($("viewport"));
+    (function loop() { controls.update(); renderer.render(scene, camera); requestAnimationFrame(loop); })();
+  } else {
+    var msg = document.createElement("div");
+    msg.className = "vp-error";
+    msg.textContent = "The 3D view needs WebGL and three.js from cdnjs, and one of them is unavailable here. The images and tables still work.";
+    $("viewport").appendChild(msg);
+    $("gl").hidden = true;
+  }
+
+  function disposeObj(o) { if (!o) return; scene.remove(o); o.geometry.dispose(); o.material.dispose(); }
+
+  function buildCloud() {
+    var ep = cur(), P = prepare(ep);
+    disposeObj(cloud);
+    var geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(P.pos, 3));
+    geo.setAttribute("color", new THREE.BufferAttribute(new Float32Array(ep.n * 3), 3));
+    cloud = new THREE.Points(geo, new THREE.PointsMaterial({ size: 0.0042 * state.size, vertexColors: true }));
+    scene.add(cloud);
+    var c = ep.cam.pos, k = ep.cam.corners, seq = [0, 1, 3, 2], v = [];
+    seq.forEach(function (a, i) {
+      var b = seq[(i + 1) % 4];
+      v.push(c[0], c[1], c[2], k[a][0], k[a][1], k[a][2], k[a][0], k[a][1], k[a][2], k[b][0], k[b][1], k[b][2]);
+    });
+    frustum.geometry.dispose();
+    frustum.geometry = new THREE.BufferGeometry();
+    frustum.geometry.setAttribute("position", new THREE.Float32BufferAttribute(v, 3));
+  }
+
+  function buildParts() {
+    if (!has3D) return;
+    var P = prepare(cur()).parts[state.src];
+    disposeObj(handlePts); disposeObj(otherPts);
+    function pts(arr, color, size) {
+      var g = new THREE.BufferGeometry();
+      g.setAttribute("position", new THREE.BufferAttribute(arr, 3));
+      var o = new THREE.Points(g, new THREE.PointsMaterial({ color: new THREE.Color(color), size: size * state.size, depthTest: false, transparent: true, opacity: 0.95 }));
+      o.renderOrder = 2; scene.add(o); return o;
+    }
+    otherPts = pts(P.other, tok(SRC[state.src].otherTok), 0.0038);
+    handlePts = pts(P.handle, tok("--handle"), 0.0068);
+    applyLayers();
+  }
+
+  function paint() {
+    if (!has3D || !cloud) return;
+    var ep = cur(), P = prepare(ep), out = cloud.geometry.attributes.color.array;
+    var bg = hexRgb(tok("--viewport")), H = hexRgb(tok("--handle")), Hd = hexRgb(tok("--head"));
+    var lo = ep.depthRange[0], span = ep.depthRange[1] - ep.depthRange[0], dim = state.parts ? 0.45 : 0;
+    for (var i = 0; i < ep.n; i++) {
+      var r = P.col[3 * i] / 255, g = P.col[3 * i + 1] / 255, b = P.col[3 * i + 2] / 255, o;
+      if (state.mode === "rgb") o = [r, g, b];
+      else if (state.mode === "depth") o = viridis(1 - (P.dep[i] - lo) / span);
+      else {
+        var l = 0.3 * r + 0.59 * g + 0.11 * b;
+        o = (P.lab[i] & 1) ? H : (P.lab[i] & 2) ? Hd : [bg[0] * 0.5 + l * 0.5, bg[1] * 0.5 + l * 0.5, bg[2] * 0.5 + l * 0.5];
+      }
+      if (dim && state.mode !== "labels") o = [o[0] * (1 - dim) + bg[0] * dim, o[1] * (1 - dim) + bg[1] * dim, o[2] * (1 - dim) + bg[2] * dim];
+      out[3 * i] = o[0]; out[3 * i + 1] = o[1]; out[3 * i + 2] = o[2];
+    }
+    cloud.geometry.attributes.color.needsUpdate = true;
+  }
+
+  function buildCandidates() {
+    if (!has3D) return;
+    var ep = cur();
+    candGroup.children.slice().forEach(function (o) { candGroup.remove(o); o.geometry.dispose(); o.material.dispose(); });
+    pickables = [];
+    var grey = hexRgb(tok("--muted"));
+    ep.candidates.forEach(function (c) {
+      var rgb = c.pass ? viridis(c.f[state.src]) : grey;
+      var col = new THREE.Color(rgb[0], rgb[1], rgb[2]);
+      var m = new THREE.Mesh(new THREE.SphereGeometry(0.0062, 16, 12),
+        new THREE.MeshBasicMaterial({ color: col, depthTest: false, transparent: true, opacity: c.pass ? 1 : 0.6 }));
+      m.position.set(c.p[0], c.p[1], c.p[2]); m.renderOrder = 5; m.userData.cand = c;
+      candGroup.add(m); pickables.push(m);
+      var a = c.approach, L = 0.06;
+      var line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(c.p[0] - a[0] * L, c.p[1] - a[1] * L, c.p[2] - a[2] * L), new THREE.Vector3(c.p[0], c.p[1], c.p[2])]),
+        new THREE.LineBasicMaterial({ color: col, depthTest: false, transparent: true, opacity: c.pass ? 0.7 : 0.3 }));
+      line.renderOrder = 5; candGroup.add(line);
+    });
+    var s = ep.candidates[ep.selected[state.src]];
+    selRing.position.set(s.p[0], s.p[1], s.p[2]);
+    applyLayers();
+  }
+
+  function applyLayers() {
+    if (!has3D) return;
+    candGroup.visible = state.cands;
+    selRing.visible = state.cands;
+    frustum.visible = state.frustum;
+    if (handlePts) { handlePts.visible = state.parts; otherPts.visible = state.parts; }
+  }
+
+  function placeShells(c) {
+    if (!has3D) return;
+    var on = c !== null && state.cands;
+    shellIn.visible = shellOut.visible = nearLine.visible = on;
+    if (!on) return;
+    shellIn.position.set(c.p[0], c.p[1], c.p[2]);
+    shellOut.position.set(c.p[0], c.p[1], c.p[2]);
+    var n = c.near[state.src];
+    nearLine.geometry.dispose();
+    nearLine.geometry = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(c.p[0], c.p[1], c.p[2]), new THREE.Vector3(n[0], n[1], n[2])]);
+  }
+
+  function retheme() {
+    if (has3D) {
+      renderer.setClearColor(new THREE.Color(tok("--viewport")));
+      frustum.material.color.set(tok("--muted"));
+      selRing.material.color.set(tok("--select"));
+      marker.material.color.set(tok("--ink"));
+      shellIn.material.color.set(tok("--accent"));
+      shellOut.material.color.set(tok("--accent"));
+      nearLine.material.color.set(tok("--ink"));
+      if (cloud) { paint(); buildParts(); buildCandidates(); }
+    }
+    renderLegend();
+  }
+
+  function setView(kind) {
+    if (!has3D) return;
+    var ep = cur(), c = ep.cam.pos, f = ep.cam.forward, K = ep.K;
+    var t = -(c[0] * f[0] + c[1] * f[1] + c[2] * f[2]);
+    var target = new THREE.Vector3(c[0] + f[0] * t, c[1] + f[1] * t, c[2] + f[2] * t);
+    camera.fov = 2 * Math.atan((ep.image[1] / 2) / K[1][1]) * 180 / Math.PI;
+    camera.updateProjectionMatrix();
+    controls.target.copy(target);
+    if (kind === "camera") {
+      camera.position.set(c[0], c[1], c[2]);
+    } else if (kind === "top") {
+      camera.position.set(target.x, target.y - 0.001, target.z + 0.55);
+    } else {
+      var off = new THREE.Vector3(c[0], c[1], c[2]).sub(target).multiplyScalar(0.42);
+      off.applyAxisAngle(new THREE.Vector3(0, 0, 1), -0.72);
+      off.z += 0.12;
+      camera.position.copy(target).add(off);
+    }
+    controls.update();
+  }
+
+  /* ---------- readouts and linking ---------- */
+  function setCross(u, v) {
+    var ep = cur();
+    ["rgb", "depth"].forEach(function (k) {
+      var el = $("cross-" + k);
+      el.hidden = false;
+      el.style.left = ((u + 0.5) / ep.image[0] * 100) + "%";
+      el.style.top = ((v + 0.5) / ep.image[1] * 100) + "%";
+    });
+  }
+  function hideCross() { $("cross-rgb").hidden = true; $("cross-depth").hidden = true; }
+
+  function readout(title, rows) {
+    $("readout-title").textContent = title;
+    $("readout").innerHTML = rows.map(function (r) { return "<dt>" + r[0] + "</dt><dd>" + r[1] + "</dd>"; }).join("");
+  }
+
+  function showPoint(i) {
+    var ep = cur(), P = prepare(ep), g = P.pt2pix[i];
+    var u = (g % P.gw) * ep.stride, v = Math.floor(g / P.gw) * ep.stride;
+    var x = P.pos[3 * i], y = P.pos[3 * i + 1], z = P.pos[3 * i + 2], c0 = ep.centroid, lab = P.lab[i];
+    setCross(u, v);
+    if (has3D) { marker.position.set(x, y, z); marker.visible = true; }
+    readout("Scene point at pixel " + u + ", " + v, [
+      ["Depth", num(P.dep[i], 3) + " m"],
+      ["World x, y, z", [x + c0[0], y + c0[1], z + c0[2]].map(function (w) { return num(w, 3); }).join(", ") + " m"],
+      ["True part", (lab & 1) ? "handle" : (lab & 2) ? "head" : "not the hammer"],
+      ["In SAM3 mask", (lab & 4) ? "handle" : (lab & 8) ? "head" : "no"]
+    ]);
+  }
+
+  function showCandidate(c) {
+    var ep = cur(), other = state.src === "geometric" ? "sam3" : "geometric";
+    state.active = c.i;
+    hideCross();
+    if (has3D) marker.visible = false;
+    placeShells(c);
+    var sel = [];
+    if (ep.selected.geometric === c.i) sel.push("geometric");
+    if (ep.selected.sam3 === c.i) sel.push("SAM3");
+    readout("Candidate " + c.i + " · " + c.part + " grasp", [
+      ["Nearest handle point", cm(c.d[state.src])],
+      ["f = 1 − (d − 3 cm) / 5 cm", num(c.f[state.src], 2)],
+      ["f with " + SRC[other].short + " points", num(c.f[other], 2)],
+      ["Gate r·a·c", num(c.gate, 2) + (c.pass ? ", passes" : ", removed")],
+      ["Task term", num(c.task, 2)],
+      ["Selected by L3", sel.length ? "with " + sel.join(" and ") : "no"],
+      ["Recorded rollout", c.success ? "success" : "no success"]
+    ]);
+    Array.prototype.forEach.call($("cands").children, function (tr) { tr.classList.toggle("active", Number(tr.dataset.i) === c.i); });
+  }
+
+  function pickImage(e) {
+    var ep = cur(), P = prepare(ep), r = e.currentTarget.getBoundingClientRect();
+    var u = Math.min(ep.image[0] - 1, Math.max(0, Math.floor((e.clientX - r.left) / r.width * ep.image[0])));
+    var v = Math.min(ep.image[1] - 1, Math.max(0, Math.floor((e.clientY - r.top) / r.height * ep.image[1])));
+    var gu = Math.floor(u / ep.stride), gv = Math.floor(v / ep.stride), pt = P.pix2pt[gv * P.gw + gu];
+    if (pt >= 0) { showPoint(pt); return; }
+    setCross(gu * ep.stride, gv * ep.stride);
+    if (has3D) marker.visible = false;
+    readout("Pixel " + gu * ep.stride + ", " + gv * ep.stride, [["In the 3D scene", "no, farther than " + ep.radius.toFixed(1) + " m from the hammer"]]);
+  }
+  ["wrap-rgb", "wrap-depth"].forEach(function (id) { $(id).addEventListener("pointermove", pickImage); });
+
+  if (has3D) {
+    var ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), pending = null, queued = false;
+    renderer.domElement.addEventListener("pointermove", function (e) {
+      pending = e;
+      if (!queued) { queued = true; requestAnimationFrame(pick); }
+    });
+    var pick = function () {
+      queued = false;
+      if (!pending || pending.buttons) return;
+      var r = renderer.domElement.getBoundingClientRect();
+      ndc.set((pending.clientX - r.left) / r.width * 2 - 1, -((pending.clientY - r.top) / r.height) * 2 + 1);
+      ray.setFromCamera(ndc, camera);
+      if (state.cands) {
+        var hc = ray.intersectObjects(pickables, false);
+        if (hc.length) { showCandidate(hc[0].object.userData.cand); return; }
+      }
+      ray.params.Points.threshold = 0.0035 * state.size;
+      var hp = ray.intersectObject(cloud, false);
+      if (hp.length) showPoint(hp[0].index);
+    };
+  }
+
+  /* ---------- panels ---------- */
+  function stats(ep, src) {
+    var hs = ep.candidates.filter(function (c) { return c.part === "handle"; });
+    var hd = ep.candidates.filter(function (c) { return c.part === "head"; });
+    var mean = function (a) { return a.reduce(function (s, c) { return s + c.f[src]; }, 0) / Math.max(1, a.length); };
+    var s = ep.candidates[ep.selected[src]];
+    return {
+      points: ep.sources[src].count[0], handleMean: mean(hs), headMean: mean(hd), nHandle: hs.length, nHead: hd.length,
+      headHigh: hd.filter(function (c) { return c.f[src] >= 0.5; }).length, sel: s
+    };
+  }
+
+  function renderCompare() {
+    var ep = cur(), g = stats(ep, "geometric"), s = stats(ep, "sam3");
+    var on = function (src) { return state.src === src ? ' class="num on"' : ' class="num"'; };
+    var row = function (label, a, b) { return "<tr><td>" + label + "</td><td" + on("geometric") + ">" + a + "</td><td" + on("sam3") + ">" + b + "</td></tr>"; };
+    var sel = function (x) { return "#" + x.sel.i + " " + x.sel.part; };
+    $("compare").innerHTML =
+      "<thead><tr><th></th>" +
+      '<th class="num' + (state.src === "geometric" ? " on" : "") + '" data-src="geometric" tabindex="0">Geometric<small>reported</small></th>' +
+      '<th class="num' + (state.src === "sam3" ? " on" : "") + '" data-src="sam3" tabindex="0">SAM3<small>pilot</small></th></tr></thead><tbody>' +
+      row("Handle points", g.points.toLocaleString("en-US"), s.points.toLocaleString("en-US")) +
+      row("Mean f, handle grasps (" + g.nHandle + ")", num(g.handleMean, 2), num(s.handleMean, 2)) +
+      row("Mean f, head grasps (" + g.nHead + ")", num(g.headMean, 2), num(s.headMean, 2)) +
+      row("Head grasps with f ≥ 0.5", g.headHigh + " of " + g.nHead, s.headHigh + " of " + s.nHead) +
+      row("L3 selects", sel(g), sel(s)) +
+      row("Its recorded rollout", g.sel.success ? "success" : "no success", s.sel.success ? "success" : "no success") +
+      "</tbody>";
+    $("compare-ep").textContent = "episode " + ep.seed;
+  }
+
+  function fcell(c, src) {
+    var v = c.f[src], rgb = viridis(v);
+    return '<td class="num' + (state.src === src ? " on" : "") + '">' + num(v, 2) +
+      '<span class="fbar" aria-hidden="true"><i style="width:' + Math.round(v * 100) + "%;background:" + rgbCss(rgb) + '"></i></span></td>';
+  }
+
+  function renderTable() {
+    var ep = cur();
+    $("cand-meta").textContent = "L3 feasibility-first";
+    Array.prototype.forEach.call(document.querySelectorAll("th[data-col]"), function (th) {
+      th.classList.toggle("on", th.dataset.col === state.src);
+    });
+    $("cands").innerHTML = ep.candidates.map(function (c) {
+      var tags = "";
+      if (ep.selected.geometric === c.i) tags += ' <span class="chip sel">L3 · geometric</span>';
+      if (ep.selected.sam3 === c.i) tags += ' <span class="chip sel">L3 · SAM3</span>';
+      var dcell = function (src) { return '<td class="num' + (state.src === src ? " on" : "") + '">' + cm(c.d[src]) + "</td>"; };
+      return '<tr tabindex="0" data-i="' + c.i + '" class="' + (c.pass ? "" : "gated") + (state.active === c.i ? " active" : "") + '">' +
+        "<td>" + c.i + tags + "</td><td>" + c.part + '</td><td class="num">' + num(c.gate, 2) +
+        (c.pass ? "" : ' <span class="chip gate">gated</span>') + "</td>" +
+        dcell("geometric") + fcell(c, "geometric") + dcell("sam3") + fcell(c, "sam3") +
+        "<td>" + (c.success ? '<span class="chip ok">success</span>' : '<span class="chip no">no success</span>') + "</td></tr>";
+    }).join("");
+  }
+
+  function renderLegend() {
+    var ep = cur(), rows = [];
+    if (state.parts) {
+      rows.push('<div class="row"><span class="dot" style="background:var(--handle)"></span>handle points, ' +
+        SRC[state.src].short + '<span class="dot" style="background:var(' + SRC[state.src].otherTok + ');margin-left:6px"></span>' + SRC[state.src].other + "</div>");
+    }
+    if (state.mode === "depth") {
+      rows.push('<div class="row"><span class="bar" style="background:' + VIR_R_CSS + '"></span><span class="ends">scene depth ' +
+        num(ep.depthRange[0], 2) + " to " + num(ep.depthRange[1], 2) + " m</span></div>");
+    } else if (state.mode === "labels") {
+      rows.push('<div class="row"><span class="dot" style="background:var(--handle)"></span>true handle<span class="dot" style="background:var(--head);margin-left:6px"></span>true head</div>');
+    }
+    if (state.cands && has3D) {
+      rows.push('<div class="row"><span class="bar" style="background:' + VIR_CSS + '"></span><span class="ends">grasp colour = f, 0 to 1</span></div>');
+      rows.push('<div class="row"><span class="ring"></span>selected by L3<span class="shell" style="margin-left:6px"></span>3 cm and 8 cm around the active grasp</div>');
+    }
+    $("legend").innerHTML = rows.join("");
+    $("legend").hidden = rows.length === 0;
+  }
+
+  function renderSourceNote() {
+    $("source-note").textContent = state.src === "geometric"
+      ? "Points of the simulator's object cloud whose horizontal distance from the cloud centre exceeds the median by 1.5 standard deviations."
+      : "The SAM3 mask for “" + (D.prompts.handle || "handle") + "”, eroded by " + D.erode_px + " px and lifted through this frame's depth.";
+  }
+
+  function renderEpisode() {
+    var ep = cur();
+    $("img-rgb").src = ep.rgb;
+    $("img-depth").src = ep.depth;
+    $("cap-rgb").textContent = ep.image[0] + " × " + ep.image[1] + " px";
+    $("cap-depth").textContent = "near " + num(ep.depthRange[0], 2) + " m, far " + num(ep.depthRange[1], 2) + " m";
+    $("kicker").textContent = "Meta-World " + D.task + " · episode " + ep.seed + " · " + ep.n.toLocaleString("en-US") + " scene points";
+    $("instruction").textContent = "“" + D.instruction + "”";
+    var K = ep.K;
+    $("formula").innerHTML = "x = (u − " + num(K[0][2], 1) + ") z / " + num(K[0][0], 1) + "<br>" +
+      "y = (v − " + num(K[1][2], 1) + ") z / " + num(K[1][1], 1) + "<br>" +
+      "p<sub>world</sub> = T<sub>cam→world</sub> [x, y, z, 1]";
+    Array.prototype.forEach.call($("episodes").children, function (b) { b.setAttribute("aria-pressed", String(Number(b.dataset.ep) === state.ep)); });
+    hideCross();
+    if (has3D) { buildCloud(); paint(); buildParts(); buildCandidates(); }
+    renderAll();
+    showCandidate(ep.candidates[state.active === null ? ep.selected[state.src] : state.active]);
+  }
+
+  function renderAll() { renderCompare(); renderTable(); renderLegend(); renderSourceNote(); }
+
+  function setSource(src) {
+    state.src = src;
+    Array.prototype.forEach.call($("sources").children, function (b) { b.setAttribute("aria-pressed", String(b.dataset.src === src)); });
+    if (has3D) { buildParts(); buildCandidates(); }
+    renderAll();
+    showCandidate(cur().candidates[state.active === null ? cur().selected[src] : state.active]);
+  }
+
+  $("episodes").innerHTML = D.episodes.map(function (ep, i) {
+    return '<button type="button" data-ep="' + i + '" aria-pressed="' + (i === 0) + '">Episode ' + ep.seed + "</button>";
+  }).join("");
+  $("episodes").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    state.ep = Number(b.dataset.ep); state.active = null; renderEpisode();
+  });
+  $("sources").addEventListener("click", function (e) { var b = e.target.closest("button"); if (b) setSource(b.dataset.src); });
+  $("compare").addEventListener("click", function (e) { var th = e.target.closest("th[data-src]"); if (th) setSource(th.dataset.src); });
+  $("compare").addEventListener("keydown", function (e) {
+    var th = e.target.closest("th[data-src]");
+    if (th && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); setSource(th.dataset.src); }
+  });
+  $("modes").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    state.mode = b.dataset.mode;
+    Array.prototype.forEach.call($("modes").children, function (x) { x.setAttribute("aria-pressed", String(x === b)); });
+    paint(); renderLegend();
+  });
+  $("cands").addEventListener("click", function (e) { var tr = e.target.closest("tr"); if (tr) showCandidate(cur().candidates[Number(tr.dataset.i)]); });
+  $("cands").addEventListener("keydown", function (e) {
+    var tr = e.target.closest("tr");
+    if (tr && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); showCandidate(cur().candidates[Number(tr.dataset.i)]); }
+  });
+  $("show-parts").addEventListener("change", function (e) { state.parts = e.target.checked; applyLayers(); paint(); renderLegend(); });
+  $("show-cands").addEventListener("change", function (e) {
+    state.cands = e.target.checked; applyLayers(); placeShells(state.active === null ? null : cur().candidates[state.active]); renderLegend();
+  });
+  $("show-frustum").addEventListener("change", function (e) { state.frustum = e.target.checked; applyLayers(); });
+  $("size").addEventListener("input", function (e) {
+    state.size = Number(e.target.value);
+    $("size-out").textContent = state.size.toFixed(state.size % 1 ? 2 : 1) + "×";
+    if (cloud) { cloud.material.size = 0.0042 * state.size; buildParts(); }
+  });
+  $("view-camera").addEventListener("click", function () { setView("camera"); });
+  $("view-orbit").addEventListener("click", function () { setView("orbit"); });
+  $("view-top").addEventListener("click", function () { setView("top"); });
+  if (!has3D) { ["view-camera", "view-orbit", "view-top"].forEach(function (id) { $(id).hidden = true; }); }
+
+  $("note-scope").textContent = "Every reported result takes handle points from the geometric partition of the simulator's object cloud. " +
+    "The SAM3 source ran in the earlier 11-task Meta-World pilot; there the task term still used the geometric partition. " +
+    "Both functional scores shown here are recomputed from the points and match the run log (" + D.run.split("/")[0] + ").";
+
+  var mq = window.matchMedia("(prefers-color-scheme: dark)");
+  if (mq.addEventListener) mq.addEventListener("change", retheme);
+  new MutationObserver(retheme).observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+
+  renderEpisode();
+  retheme();
+  setView("orbit");
+})();
+</script>
+</body>
+</html>
