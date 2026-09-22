@@ -234,34 +234,33 @@ var STAGES = {
     spec: [['Meta-World K', 'up to 16'], ['LIBERO-PRO K', 'up to 12'], ['Candidate source', 'simulator geometry'], ['Shared across methods', 'yes, hashed']]
   },
   ground: {
-    eyebrow: 'Component D',
-    title: 'Ground the named parts',
-    lead: 'The named region becomes part points that score every candidate.',
-    body: 'In every reported run the points come from a geometric partition of the object’s simulator geometry. ' +
-      'The SAM3 path renders one RGB-D frame per scene, segments the named regions by text prompt on a GPU node, ' +
-      'erodes each mask by two pixels and lifts it through depth; a region SAM3 does not detect contributes no ' +
-      'points and scores every candidate neutrally. That path supplied the part points of the earlier 11-task ' +
-      'Meta-World run.',
-    spec: [['Reported source', 'geometric part partition'], ['SAM3 path', 'earlier 11-task Meta-World run'], ['SAM3 confidence threshold', '0.3'], ['Mask erosion', '2 px']]
+    eyebrow: 'Components C to E',
+    title: 'Ground affordance',
+    lead: 'Every candidate gets a feasibility, a functional-part and a task-compatibility score.',
+    body: 'Feasibility multiplies reach, approach and clearance for the embodiment. The functional term scores ' +
+      'distance to the named part, whose points come from a geometric partition of the object. The task term ' +
+      'compiles the next action into constraints on which part stays clear and which face needs room.',
+    spec: [['Feasibility', 'r · a · c'], ['Part points', 'geometric partition'], ['Task term', 'from the next action'], ['Trainable parameters', '0']]
   },
-  select: {
+  arbitrate: {
     eyebrow: 'Component F · ours',
-    title: 'Gate, then rank',
-    lead: 'Feasibility forms the eligible set. Function, task and memory rank only inside it.',
-    body: 'The gate keeps candidates with reach · approach · collision ≥ 0.5 and abstains when none ' +
-      'passes; the survivors are ranked by the product of their terms. Ablations replace the gate, the ' +
-      'combination rule or a term, always on identical term arrays, and weights and the threshold were fixed ' +
-      'before any evaluation run.',
-    spec: [['Gate', 'r · a · c ≥ 0.5'], ['Combination', 'product'], ['Trainable parameters', '0'], ['Ladder', 'L0 to L4, 2 × 2 each']]
+    title: 'Gate, shortlist, arbitrate',
+    lead: 'Feasibility decides what can be done, affordance narrows it to two, and a frozen VLM picks one from the image.',
+    body: 'The gate keeps candidates with r · a · c ≥ 0.5. The two gated candidates with the highest affordance ' +
+      'score form the shortlist, and a frozen VLM, shown the camera image with the candidates marked, chooses between ' +
+      'them. When no candidate passes the gate, the VLM chooses among all candidates. The shortlist size and the ' +
+      'input were fixed on development scenes before the held-out test.',
+    spec: [['Gate', 'r · a · c ≥ 0.5'], ['Shortlist', 'top 2 by affordance'], ['Arbiter', 'Gemini 3.8 Flash, RGB'], ['Trainable parameters', '0']]
   },
   execute: {
-    eyebrow: 'Component G · fixed',
-    title: 'Execute and record',
-    lead: 'A scripted executor carries out the selection; the benchmark decides success.',
-    body: 'Meta-World uses a mocap-driven 4-DoF Sawyer executor and LIBERO-PRO an operational-space Franka ' +
-      'executor, both identical for every method. Success is the benchmark’s own check, and rollout videos ' +
-      'of the selected candidates are recorded while they execute, each checked against the selection.',
-    spec: [['Meta-World horizon', '500 steps'], ['LIBERO-PRO horizon', '600 steps'], ['Success check', 'benchmark native'], ['Videos', 'recorded during evaluation']]
+    eyebrow: 'Component G · ours',
+    title: 'Execute, verify, replan',
+    lead: 'The executor acts, a frozen verifier checks the result, and an unverified attempt triggers a replan.',
+    body: 'A scripted executor carries out the choice: a 4-DoF Sawyer on Meta-World and an operational-space Franka on ' +
+      'LIBERO-PRO. The arm then moves back and a frozen VLM compares before and after images from both benchmark ' +
+      'cameras. If it does not confirm success, AFFORD-X observes the new state, removes the tried interaction ' +
+      'point, tells the arbiter what went wrong and chooses again, up to three attempts.',
+    spec: [['Verifier', 'Gemini 3.8 Flash'], ['Attempts', 'up to 3'], ['Meta-World', 'one 500-step episode'], ['Success check', 'benchmark native']]
   }
 };
 
@@ -396,7 +395,8 @@ function setupExplorer() {
    Success-rate charts with Wilson intervals
    ------------------------------------------------------------------ */
 var HIGHLIGHT = {
-  L3_feasibility_first: '#8E6BCF', L4_feasibility_first: '#6A3FB5',
+  L3_feasibility_first: '#6A3FB5', affordx_L3: '#8E6BCF', affordx_single: '#8E6BCF', method_single: '#8E6BCF',
+  method: '#6A3FB5', method_loop: '#6A3FB5',
   random: '#37404D', oracle: '#C9CDD4',
   L2_feasibility_first_geomparts: '#1F7A6E', L3_feasibility_first_geomparts: '#1F7A6E'
 };
@@ -478,9 +478,9 @@ function renderLiberoTable(data) {
   var body = document.getElementById('ax-libero-table');
   if (!body || !data.libero_pro) return;
   var cols = ['goal_pos', 'goal_task', 'spatial_pos', 'spatial_task', 'object_pos', 'object_task'];
-  var rows = [['L4_feasibility_first', 'AFFORD-X, full layer'], ['random', 'random choice'], ['oracle', 'best-candidate ceiling']];
+  var rows = [['L3_feasibility_first', 'AFFORD-X affordance layer'], ['random', 'random choice'], ['oracle', 'best-candidate ceiling']];
   var html = rows.map(function (r) {
-    return '<tr' + (r[0] === 'L4_feasibility_first' ? ' class="ax-row-ours"' : '') + '><th scope="row" class="ai-th-text">' + r[1] + '</th>' +
+    return '<tr' + (r[0] === 'L3_feasibility_first' ? ' class="ax-row-ours"' : '') + '><th scope="row" class="ai-th-text">' + r[1] + '</th>' +
       cols.map(function (c) { return '<td>' + rateOf(data.libero_pro[c], r[0]) + '</td>'; }).join('') + '</tr>';
   }).join('');
   html += '<tr><th scope="row" class="ai-th-text">tasks evaluated</th>' + cols.map(function (c) {
@@ -501,10 +501,10 @@ function renderTierTable(data) {
   if (!body || !data.metaworld || !data.metaworld.mt50) return;
   var mt = data.metaworld.mt50;
   var tiers = ['easy', 'medium', 'hard', 'very_hard', 'overall'];
-  var rows = [['L4_feasibility_first', 'AFFORD-X, full layer'], ['L0_stability', 'L0 stability'], ['random', 'random choice'],
+  var rows = [['L3_feasibility_first', 'AFFORD-X affordance layer'], ['L0_stability', 'L0 stability'], ['random', 'random choice'],
     ['oracle', 'best-candidate ceiling']];
   body.innerHTML = rows.map(function (r) {
-    return '<tr' + (r[0] === 'L4_feasibility_first' ? ' class="ax-row-ours"' : '') + '><th scope="row" class="ai-th-text">' + r[1] + '</th>' +
+    return '<tr' + (r[0] === 'L3_feasibility_first' ? ' class="ax-row-ours"' : '') + '><th scope="row" class="ai-th-text">' + r[1] + '</th>' +
       tiers.map(function (t) { return '<td>' + mt.by_tier[r[0]][t].rate.toFixed(2) + '</td>'; }).join('') + '</tr>';
   }).join('');
   var head = document.getElementById('ax-mt50-head');
@@ -525,6 +525,87 @@ function setupResults() {
   setupRateSection('ax-mw', null, 'mw', data.metaworld, []);
   renderLiberoTable(data);
   renderTierTable(data);
+  if (data.arbitration) {
+    setupRateSection('ax-arb', 'ax-arb-pairs', 'arb', data.arbitration, [
+      ['method|gemini_direct|success', 'arbitration minus VLM alone'],
+      ['method|random_shortlist|success', 'arbitration minus random in the shortlist']
+    ]);
+    renderArbitrationCards(data.arbitration);
+  }
+  if (data.agentic_loop) {
+    setupRateSection('ax-loop', 'ax-loop-pairs', 'loop', data.agentic_loop, [
+      ['method_loop|affordx_single|success', 'agentic loop minus affordance layer, 1 attempt'],
+      ['method_loop|method_single|success', 'agentic loop minus arbitration, 1 attempt']
+    ]);
+    renderVerifier(data.agentic_loop);
+  }
+  renderRecoveries(data.recoveries || []);
+  renderPairCaptions(data.videos || {});
+}
+
+function renderPairCaptions(videos) {
+  document.querySelectorAll('figcaption[data-video]').forEach(function (cap) {
+    var v = videos[cap.dataset.video];
+    if (!v) return;
+    var badge = v.success ? '<span class="ax-outcome is-success"><i class="fas fa-check"></i> succeeds</span> '
+      : '<span class="ax-outcome is-fail"><i class="fas fa-times"></i> fails</span> ';
+    var label = escapeHtml(cap.dataset.label);
+    cap.innerHTML = badge + label + (v.method === 'L0_stability' ? '.' : ', ' + escapeHtml(v.where) + '.');
+  });
+}
+
+function bracket(p) {
+  return '[' + signed(p.lo, 3) + ', ' + signed(p.hi, 3) + ']';
+}
+
+function interval(p) {
+  return signed(p.d, 3) + ' ' + bracket(p);
+}
+
+function setText(id, text) {
+  var el = document.getElementById(id);
+  if (el) el.textContent = text;
+}
+
+function renderArbitrationCards(arb) {
+  var all = arb.all.paired, lib = arb.libero_pro.paired;
+  var direct = all['method|gemini_direct|success'], shortlist = all['method|random_shortlist|success'];
+  setText('ax-arb-h1', signed(direct.d, 3) + ' over the same VLM alone');
+  setText('ax-arb-p1', 'Choosing within the affordance shortlist instead of among all candidates raises success on ' +
+    arb.all.n_scenes + ' unseen scenes, ' + bracket(direct) + '; on LIBERO-PRO ' +
+    interval(lib['method|gemini_direct|success']) + '.');
+  setText('ax-arb-h2', signed(shortlist.d, 3) + ' over random in the shortlist');
+  setText('ax-arb-p2', 'Given the same two candidates, the VLM picks one that succeeds more often than chance, ' +
+    bracket(shortlist) + '; on LIBERO-PRO ' + interval(lib['method|random_shortlist|success']) + '.');
+  setText('ax-arb-h3', 'Shortlist of ' + arb.rule.shortlist + ', ' + arb.rule.input.toUpperCase() + ' input');
+  setText('ax-arb-p3', 'Selected by a rule declared before any held-out call, from ' + arb.rule.dev_success.toFixed(3) +
+    ' success on the development scenes, then applied once to the held-out scenes.');
+}
+
+function renderVerifier(loop) {
+  var lib = loop.libero_pro, mt = loop.mt50;
+  setText('ax-loop-verifier', 'Verifier against the benchmark\u2019s own check: on LIBERO-PRO it called ' +
+    lib.verifier.failed_called_success + ' of ' + lib.verifier.failed_attempts + ' failed attempts a success, on ' +
+    'Meta-World ' + mt.verifier.failed_called_success + ' of ' + mt.verifier.failed_attempts + '. AFFORD-X used ' +
+    lib.mean_attempts.toFixed(2) + ' attempts per LIBERO-PRO episode and ' + mt.mean_attempts.toFixed(2) +
+    ' per Meta-World episode, and the first attempt reproduced the stored single-shot outcome in every episode (' +
+    (lib.attempt1_replay_mismatches + mt.attempt1_replay_mismatches) + ' mismatches).');
+}
+
+function renderRecoveries(items) {
+  var host = document.getElementById('ax-recoveries');
+  if (!host) return;
+  host.innerHTML = items.map(function (r) {
+    var steps = r.attempts.map(function (a, i) {
+      return '<li><b>Attempt ' + (i + 1) + '</b> ' + (a.verifier_success ? 'verified' : 'not verified') +
+        ': \u201c' + escapeHtml(a.verifier_reason || '') + '\u201d</li>';
+    }).join('');
+    return '<figure class="ax-video"><video src="' + r.video + '" poster="' + r.poster +
+      '" muted loop playsinline controls preload="metadata"></video><figcaption><span class="ax-outcome is-success">' +
+      '<i class="fas fa-check"></i> recovered</span> ' + escapeHtml(r.instruction) + ' <span class="ax-muted">' +
+      escapeHtml(r.cell.replace(/_/g, ' ')) + ', ' + escapeHtml(r.scene) + '</span><ol class="ax-attempts">' + steps +
+      '</ol></figcaption></figure>';
+  }).join('');
 }
 
 /* ------------------------------------------------------------------

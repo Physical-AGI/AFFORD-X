@@ -7,7 +7,7 @@
   <!-- Primary Meta Tags -->
   <meta name="title" content="AFFORD-X: Affordance-Grounded Agentic Policy for Zero-Shot Robot Manipulation">
   <meta name="description" content="AFFORD-X makes interaction selection explicit: candidate interactions, a feasibility gate, functional affordance and task compatibility, then execution. Evidence on LIBERO-PRO Goal, Spatial and Object under the Pos and Task perturbations and on Meta-World MT50, with rollout videos recorded during evaluation.">
-  <meta name="keywords" content="robot manipulation, affordance grounding, interaction selection, feasibility, SAM3, Gemini, zero-shot, LIBERO-PRO, Meta-World, counterfactual evaluation">
+  <meta name="keywords" content="robot manipulation, affordance grounding, interaction selection, feasibility, vision-language model, agentic loop, zero-shot, LIBERO-PRO, Meta-World, counterfactual evaluation">
   <meta name="robots" content="index, follow">
   <meta name="language" content="English">
   <meta name="author" content="Md Selim Sarowar">
@@ -18,7 +18,7 @@
   <meta property="og:description" content="Remove what the arm cannot execute, then rank by function and task. Counterfactual evaluation on identical candidate sets, with rollout videos.">
   <meta property="og:url" content="https://physical-agi.github.io/AFFORD-X/">
   <meta property="og:image" content="https://physical-agi.github.io/AFFORD-X/static/images/method_framework.png">
-  <meta property="og:image:alt" content="The AFFORD-X framework drawn on one Meta-World scene: instruction and RGB-D observations of the same task, task-definition intent and candidate generator, geometric part terms, feasibility-first selection and successful rollout keyframes; the Gemini proposer and SAM3 grounding are drawn hatched as alternative sources">
+  <meta property="og:image:alt" content="The AFFORD-X framework drawn on logged episodes: propose a typed intent and candidate interactions, ground feasibility, functional and task affordance terms, arbitrate with a feasibility gate, an affordance shortlist and a frozen VLM, then execute and verify in a closed agentic loop">
   <meta property="article:section" content="Robotics">
   <meta property="article:tag" content="robot manipulation">
   <meta property="article:tag" content="affordance">
@@ -101,6 +101,8 @@
     <div class="ai-nav-links" id="ai-nav-links">
       <a href="#abstract">Abstract</a>
       <a href="#method">Method</a>
+      <a href="#arbitration">Arbitration</a>
+      <a href="#loop">Agentic loop</a>
       <a href="#replay">Replay</a>
       <a href="#qualitative">Qualitative</a>
       <a href="#libero">LIBERO-PRO</a>
@@ -166,7 +168,7 @@
                 </span>
               </div>
               <p class="ai-anon-note">
-                Zero-shot: no demonstrations, no reward and no gradient steps. Results at seed 0, updated 15 September 2026.
+                Zero-shot: no demonstrations, no reward and no gradient steps. Updated 22 September 2026.
               </p>
             </div>
           </div>
@@ -181,16 +183,17 @@
       <div class="hero-body">
         <figure class="ai-figure" style="margin-top:0">
           <img src="static/images/method_framework.png" class="ai-zoomable"
-               alt="The AFFORD-X framework on the Meta-World hammer scene: a language instruction and stacked RGB-D observations of the same task; solid components are in the reported configuration (task-definition intent, top-down grasp candidates on object geometry, geometric part partition, feasibility-first rule), hatched grey components (Gemini proposer, SAM3 grounding) are alternative sources; and recorded successful executions on Meta-World and LIBERO-PRO Spatial and Object">
+               alt="The AFFORD-X framework drawn on logged episodes: an instruction and the benchmark's camera RGB; Propose, a typed intent from the task definition and top-down grasp candidates; Ground, feasibility, functional-part and task-compatibility terms with infeasible candidates removed; Arbitrate, a feasibility gate, an affordance shortlist of two and a frozen VLM choosing from the image; Execute and verify, recorded successful rollouts on Meta-World and LIBERO-PRO Spatial and Object with a VLM verifier and a replan loop">
           <figcaption>
-            <strong>AFFORD-X on one scene</strong> (Meta-World hammer, seed 0), scored with the reported
-            configuration. <strong>Solid</strong> components are in every reported result: the intent comes from the task
-            definition, 16 top-down grasp candidates are generated on simulator object geometry, the functional term uses a
-            geometric part partition, and the feasibility-first rule selects. <strong>Hatched grey</strong> components and
-            dashed arrows (the Gemini 3.8 Flash proposer, and SAM3 part grounding on the RGB-D observation with masks lifted
-            through depth) are alternative intent and part sources. <strong>Execute</strong> shows recorded successful
-            rollouts on Meta-World and LIBERO-PRO Spatial and Object. Every image, score and keyframe is read from logged
-            runs, and no module is trained.
+            <strong>AFFORD-X on logged episodes.</strong> <strong>Propose</strong>: a typed intent from the task
+            definition and top-down grasp candidates on the object. <strong>Ground</strong>: feasibility, functional-part
+            and task-compatibility terms for every candidate. <strong>Arbitrate</strong>: the feasibility gate removes what
+            the arm cannot execute, the two gated candidates with the highest affordance score form a shortlist, and a
+            frozen VLM (Gemini 3.8 Flash) chooses between them from the camera image. <strong>Execute and verify</strong>:
+            the executor acts, a frozen VLM verifier compares the before and after images, and an unverified attempt sends
+            the agent back to replan from the new state. The main scene is Meta-World disassemble; the rows are verified
+            successes on LIBERO-PRO Spatial and Object. Every image, score and verdict is read from logged episodes and
+            reproduced by replay, and no module is trained.
           </figcaption>
         </figure>
       </div>
@@ -202,16 +205,16 @@
     <div class="container is-max-desktop">
       <div class="ai-stats">
         <div class="ai-stat">
-          <div class="ai-stat-value" data-count-to="0.92" data-decimals="2">0.00</div>
-          <div class="ai-stat-label">AFFORD-X success on LIBERO-PRO Spatial Pos, n = 100, against 0.61 for random choice (privileged state)</div>
+          <div class="ai-stat-value" data-count-to="0.13" data-decimals="2" data-prefix="+">+0.00</div>
+          <div class="ai-stat-label">Success the agentic loop adds over single-shot AFFORD-X on Meta-World MT50, 100 development scenes, 95% interval [+0.04, +0.24]</div>
         </div>
         <div class="ai-stat">
-          <div class="ai-stat-value" data-count-to="6" data-decimals="0">0</div>
-          <div class="ai-stat-label">Of 6 LIBERO-PRO Pos/Task cells in which AFFORD-X succeeds more often than random choice among the same candidates</div>
+          <div class="ai-stat-value" data-count-to="0.045" data-decimals="3" data-prefix="+">+0.000</div>
+          <div class="ai-stat-label">Held-out success of affordance-grounded arbitration over the same VLM choosing freely, 510 unseen scenes, [+0.012, +0.084]</div>
         </div>
         <div class="ai-stat">
-          <div class="ai-stat-value" data-count-to="0.68" data-decimals="2" data-prefix="+">+0.00</div>
-          <div class="ai-stat-label">Success the feasibility gate adds to a weighted-sum ranking at L1 on LIBERO-PRO Spatial Pos, 95% interval [+0.59, +0.77]</div>
+          <div class="ai-stat-value" data-count-to="0" data-decimals="0">0</div>
+          <div class="ai-stat-label">Failed LIBERO-PRO attempts, of 189, that the verifier accepted as successes</div>
         </div>
         <div class="ai-stat">
           <div class="ai-stat-value" data-count-to="0" data-decimals="0">0</div>
@@ -229,22 +232,23 @@
           <h2 class="title is-3">Abstract</h2>
           <div class="content has-text-justified">
             <p>
-              Direct action generation can commit to an interaction that is plausible, even stable, and still wrong
-              for the task: a hammer held by its head, a bowl grasped where the fingers cannot close. AFFORD-X makes
-              that choice explicit and inspectable. A typed intent names the target, the functional region and the next
-              action, and a <strong>feasibility-first</strong> rule removes candidate interactions the embodiment cannot
-              execute before functional affordance and task compatibility rank the rest. In every reported run the intent
-              comes from the task definition and the parts from a geometric partition; a semantic proposer (Gemini 3.8
-              Flash) and SAM3 part grounding are implemented as alternative sources. No module is trained. Evaluation is counterfactual: every compared method
-              ranks the same content-hashed candidate set, and every candidate is executed from the identical start
-              state in the benchmark's own simulator, so a success difference is a difference in the selected
-              interaction. With a 7-DoF Franka on LIBERO-PRO under the position and task perturbations, and with object
-              geometry and the goal read from simulator state so that the selection layer is measured in isolation, the
-              full decision layer succeeds in 0.57 and 0.38 of LIBERO-Goal scenes, 0.92 and 0.96 of LIBERO-Spatial
-              scenes and every LIBERO-Object scene, above random choice among the same candidates in all six cells
-              (10 initial states per task). The same layer is also evaluated on the 50 Meta-World MT50 tasks with a
-              4-DoF Sawyer. Every comparison comes with paired bootstrap intervals and rollout videos recorded during
-              evaluation.
+              Direct action generation can commit to an interaction that is plausible, even stable, and still wrong for
+              the task: a hammer held by its head, a bowl grasped where the fingers cannot close. AFFORD-X makes that
+              choice explicit. Candidate interactions are scored by physical feasibility, functional affordance and task
+              compatibility; a <strong>feasibility gate</strong> removes what the embodiment cannot execute, and a frozen
+              vision-language model <strong>arbitrates</strong> only between the two candidates the affordance terms rank
+              highest, choosing from the camera image. A closed <strong>agentic loop</strong> executes the choice, asks a
+              frozen VLM verifier whether the before and after images show the task done, and replans from the new state
+              until it is verified. No module is trained. Evaluation is counterfactual: every method ranks the same
+              content-hashed candidate set and every candidate is executed in the benchmark's own simulator, so a success
+              difference is a difference in the selected interaction. On 510 LIBERO-PRO and Meta-World MT50 scenes held
+              out from every design choice, grounding the VLM in the affordance shortlist raises success over the same VLM
+              choosing freely by 0.045 [0.012, 0.084], and by 0.053 [0.014, 0.104] on LIBERO-PRO, and inside the shortlist
+              the VLM beats random choice by 0.050 [0.012, 0.091]. On Meta-World MT50 the agentic loop reaches 0.54 against
+              0.41 for single-shot selection on the same 100 development scenes, +0.13 [0.04, 0.24], and on LIBERO-PRO the
+              verifier accepted none of 189 failed attempts. Candidate geometry comes from simulator state, so the
+              selection layer is measured in isolation, and every comparison carries paired bootstrap intervals and
+              rollout videos recorded during evaluation.
             </p>
           </div>
         </div>
@@ -257,7 +261,7 @@
     <div class="container is-max-desktop">
       <h2 class="title is-3 has-text-centered">From Instruction to Interaction</h2>
       <p class="ai-section-intro">
-        Five stages; only the selection rule is ours, and nothing is trained. Pick a stage.
+        Five stages; the arbitration rule and the agentic loop are ours, and nothing is trained. Pick a stage.
       </p>
 
       <div class="ai-loop">
@@ -273,18 +277,18 @@
           </button>
           <div class="ai-stage-arrow" role="presentation" aria-hidden="true"><i class="fas fa-arrow-down"></i></div>
           <button class="ai-stage" role="tab" aria-selected="false" data-stage="ground" style="--stage-c:var(--stage-ground)">
-            <span class="ai-stage-num">D</span>
-            <span><span class="ai-stage-name">Ground parts</span><span class="ai-stage-sub">Geometric part partition</span></span>
+            <span class="ai-stage-num">C&ndash;E</span>
+            <span><span class="ai-stage-name">Ground affordance</span><span class="ai-stage-sub">Feasibility, functional part, task</span></span>
           </button>
           <div class="ai-stage-arrow" role="presentation" aria-hidden="true"><i class="fas fa-arrow-down"></i></div>
-          <button class="ai-stage" role="tab" aria-selected="false" data-stage="select" style="--stage-c:var(--stage-select)">
+          <button class="ai-stage" role="tab" aria-selected="false" data-stage="arbitrate" style="--stage-c:var(--stage-select)">
             <span class="ai-stage-num">F</span>
-            <span><span class="ai-stage-name">Gate, then rank</span><span class="ai-stage-sub">Ours. Feasibility first, preference second</span></span>
+            <span><span class="ai-stage-name">Arbitrate</span><span class="ai-stage-sub">Ours. Gate, affordance shortlist, VLM choice</span></span>
           </button>
           <div class="ai-stage-arrow" role="presentation" aria-hidden="true"><i class="fas fa-arrow-down"></i></div>
           <button class="ai-stage" role="tab" aria-selected="false" data-stage="execute" style="--stage-c:var(--stage-execute)">
             <span class="ai-stage-num">G</span>
-            <span><span class="ai-stage-name">Execute</span><span class="ai-stage-sub">Scripted executor, benchmark success check</span></span>
+            <span><span class="ai-stage-name">Execute and verify</span><span class="ai-stage-sub">Ours. Closed agentic loop</span></span>
           </button>
         </div>
         <div class="ai-loop-detail" id="ai-loop-detail">
@@ -316,9 +320,9 @@
           </div>
           <div class="ai-note">
             <h3>The gate</h3>
-            <p>A candidate is eligible when <em>r&middot;a&middot;c</em>&nbsp;&ge;&nbsp;0.5. When no candidate passes,
-              the rule abstains and the episode counts as a failure, rather than executing something the arm cannot
-              do.</p>
+            <p>A candidate is eligible when <em>r&middot;a&middot;c</em>&nbsp;&ge;&nbsp;0.5. The two eligible candidates
+              with the highest affordance score go to the VLM arbiter; when no candidate passes, the arbiter chooses among
+              all candidates instead of the arm executing nothing.</p>
           </div>
         </div>
       </div>
@@ -363,7 +367,7 @@
         <div class="ai-note-grid">
           <div class="ai-note">
             <h3>Measured as a factorial</h3>
-            <p>Every level L1 to L4 runs the same rank terms under gate &isin; {none, feasibility} and combination
+            <p>Every level L1 to L3 runs the same rank terms under gate &isin; {none, feasibility} and combination
               &isin; {weighted sum, product}, so the gate and the combination rule are measured separately rather
               than as one package.</p>
           </div>
@@ -400,8 +404,73 @@
         Runs are immutable directories with resolved configs, code hashes, package versions and a file manifest, and
         suites launch from frozen source snapshots. Rollout videos are recorded while the selected candidates execute,
         and each is checked against the method's selection. In the current LIBERO-PRO runs, none of the 1,288 recorded
-        rollouts disagrees with its unrecorded simulator outcome.
+        rollouts disagrees with its unrecorded simulator outcome. The arbitration rule was fixed on development scenes by
+        a declared procedure and tested once on held-out scenes; the agentic loop runs online, each attempt from the state
+        the previous one left, and its first attempt reproduced the stored single-shot outcome in all 280 episodes.
       </p>
+    </div>
+  </section>
+
+  <!-- Arbitration -->
+  <section class="section hero is-light" id="arbitration">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3 has-text-centered">Affordance-Grounded Arbitration</h2>
+      <p class="ai-section-intro">
+        The rule was fixed on 280 development scenes and then tested once on 510 scenes that played no part in any
+        choice: LIBERO-PRO Goal, Spatial and Object under Pos and Task, and Meta-World MT50. Every method ranks the same
+        candidates, and success is the simulator outcome of its choice. 95% intervals over task clusters; hover a bar.
+      </p>
+      <div class="ax-pills">
+        <button class="ax-pill is-active" data-arb="all">All held-out &middot; n = 510</button>
+        <button class="ax-pill" data-arb="libero_pro">LIBERO-PRO &middot; n = 360</button>
+        <button class="ax-pill" data-arb="mt50">Meta-World MT50 &middot; n = 150</button>
+      </div>
+      <div class="ax-chart-card ax-chart-host" id="ax-arb"></div>
+      <div class="ax-pairs" id="ax-arb-pairs"></div>
+      <div class="ax-cards ax-cards-3">
+        <div class="ax-card">
+          <div class="ax-card-eyebrow">Grounding the VLM</div>
+          <h3 id="ax-arb-h1"></h3>
+          <p id="ax-arb-p1"></p>
+        </div>
+        <div class="ax-card">
+          <div class="ax-card-eyebrow">Selection skill</div>
+          <h3 id="ax-arb-h2"></h3>
+          <p id="ax-arb-p2"></p>
+        </div>
+        <div class="ax-card">
+          <div class="ax-card-eyebrow">Fixed before testing</div>
+          <h3 id="ax-arb-h3"></h3>
+          <p id="ax-arb-p3"></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Agentic loop -->
+  <section class="section" id="loop">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3 has-text-centered">The Agentic Loop</h2>
+      <p class="ai-section-intro">
+        Execute, verify, replan. On 280 development scenes AFFORD-X runs as a closed loop of up to three attempts; the
+        same selections executed once are shown beside it. On Meta-World every attempt shares the benchmark's single
+        500-step episode. 95% intervals over task clusters; hover a bar.
+      </p>
+      <div class="ax-pills">
+        <button class="ax-pill is-active" data-loop="mt50">Meta-World MT50 &middot; n = 100</button>
+        <button class="ax-pill" data-loop="libero_pro">LIBERO-PRO &middot; n = 180</button>
+        <button class="ax-pill" data-loop="all">All &middot; n = 280</button>
+      </div>
+      <div class="ax-chart-card ax-chart-host" id="ax-loop"></div>
+      <div class="ax-pairs" id="ax-loop-pairs"></div>
+      <p class="ai-table-note" id="ax-loop-verifier"></p>
+
+      <h3 class="title is-4 has-text-centered" style="margin-top:2.5rem">Recovering From a Failed Attempt</h3>
+      <p class="ai-section-intro">
+        Episodes in which the verifier rejected an attempt, AFFORD-X replanned from the new state and the next attempt
+        was verified. Each video is a replay that reproduces the logged episode.
+      </p>
+      <div class="ax-video-grid" id="ax-recoveries"></div>
     </div>
   </section>
 
@@ -485,7 +554,7 @@
       <h3 class="title is-4 has-text-centered" style="margin-top:2.5rem">Browse Successful Rollouts</h3>
       <p class="ai-section-intro">
         One recorded AFFORD-X rollout per LIBERO-PRO cell and per MT50 difficulty tier: the first scene, in sorted order,
-        in which the full decision layer's selection succeeded. Pick a clip, or use the arrow keys.
+        in which the affordance layer's selection succeeded. Pick a clip, or use the arrow keys.
       </p>
       <div class="ax-gallery" id="ax-gallery">
         <div id="ax-gallery-pills"></div>
@@ -536,19 +605,19 @@
           <div class="ax-card-eyebrow">Spatial &middot; feasibility decides</div>
           <h3>Within 0.08 of the best candidate</h3>
           <p>Stability ranking picks the point nearest the centre of mass, which on these bowls is rejected as
-            infeasible or fails in execution, and it succeeds in no Spatial scene. The full layer reaches 0.92 under Pos
+            infeasible or fails in execution, and it succeeds in no Spatial scene. The affordance layer reaches 0.92 under Pos
             and 0.96 under Task, against 0.61 and 0.71 for random choice among the same candidates.</p>
         </div>
         <div class="ax-card">
           <div class="ax-card-eyebrow">Goal &middot; above random in both cells</div>
           <h3>0.57 under Pos, 0.38 under Task</h3>
-          <p>The full decision layer more than doubles random choice under Pos (0.25) and adds 0.15 over it under
+          <p>The affordance layer more than doubles random choice under Pos (0.25) and adds 0.15 over it under
             Task (0.23), on identical candidate sets.</p>
         </div>
         <div class="ax-card">
           <div class="ax-card-eyebrow">Object &middot; every scene</div>
           <h3>1.00 under Pos and Task</h3>
-          <p>The full layer succeeds in all 100 scenes of each cell, against 0.48 and 0.44 for random choice among
+          <p>The affordance layer succeeds in all 100 scenes of each cell, against 0.48 and 0.44 for random choice among
             the same candidates.</p>
         </div>
       </div>
@@ -556,11 +625,11 @@
       <div class="ax-video-grid">
         <figure class="ax-video">
           <video src="static/videos/libero_spatial_ours.mp4" autoplay muted loop playsinline preload="metadata"></video>
-          <figcaption><span class="ax-outcome is-success"><i class="fas fa-check"></i> succeeds</span> AFFORD-X, full decision layer, LIBERO-PRO Spatial Pos, task 0, initial state 0.</figcaption>
+          <figcaption data-video="libero_spatial_ours.mp4" data-label="AFFORD-X affordance layer"></figcaption>
         </figure>
         <figure class="ax-video">
           <video src="static/videos/libero_spatial_stability.mp4" autoplay muted loop playsinline preload="metadata"></video>
-          <figcaption><span class="ax-outcome is-fail"><i class="fas fa-times"></i> fails</span> Stability ranking (L0) on the same scene and candidate set.</figcaption>
+          <figcaption data-video="libero_spatial_stability.mp4" data-label="Stability ranking (L0) on the same scene and candidate set"></figcaption>
         </figure>
       </div>
     </div>
@@ -623,12 +692,12 @@
 
       <div class="ax-video-grid">
         <figure class="ax-video">
-          <video src="static/videos/metaworld_button_press_ours.mp4" autoplay muted loop playsinline preload="metadata"></video>
-          <figcaption><span class="ax-outcome is-success"><i class="fas fa-check"></i> succeeds</span> AFFORD-X, full decision layer, MT50 button-press, episode 0.</figcaption>
+          <video src="static/videos/metaworld_ours.mp4" autoplay muted loop playsinline preload="metadata"></video>
+          <figcaption data-video="metaworld_ours.mp4" data-label="AFFORD-X affordance layer"></figcaption>
         </figure>
         <figure class="ax-video">
-          <video src="static/videos/metaworld_button_press_stability.mp4" autoplay muted loop playsinline preload="metadata"></video>
-          <figcaption><span class="ax-outcome is-fail"><i class="fas fa-times"></i> fails</span> Stability ranking (L0) on the same scene and candidate set.</figcaption>
+          <video src="static/videos/metaworld_stability.mp4" autoplay muted loop playsinline preload="metadata"></video>
+          <figcaption data-video="metaworld_stability.mp4" data-label="Stability ranking (L0) on the same scene and candidate set"></figcaption>
         </figure>
       </div>
     </div>
