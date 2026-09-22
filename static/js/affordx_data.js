@@ -4467,31 +4467,31 @@ window.AFFORDX = {
  },
  "qualitative": {
   "image": "static/images/qualitative_results.jpg",
-  "rule": "first scene in sorted scene-id order where AFFORD-X (L4 feasibility-first) and stability ranking select different candidates, both rollouts are recorded, AFFORD-X's recorded rollout succeeds and the stability-ranked one fails; a repeated run takes the next unused task",
-  "rows": [
+  "episodes": [
    {
-    "label": "LIBERO-Spatial (Pos)",
-    "scene_id": "libero_spatial:0|seed0",
-    "affordx_index": 9,
-    "stability_index": 11
+    "cell": "libero_goal_pos",
+    "scene": "libero_goal:1|seed2",
+    "run": "outputs/runs/agentic_loop/20260922T074210866867Z_aad0cdb31406"
    },
    {
-    "label": "LIBERO-Goal (Pos)",
-    "scene_id": "libero_goal:1|seed2",
-    "affordx_index": 9,
-    "stability_index": 11
+    "cell": "libero_object_pos",
+    "scene": "libero_object:2|seed0",
+    "run": "outputs/runs/agentic_loop/20260922T074210866867Z_aad0cdb31406"
    },
    {
-    "label": "Meta-World MT50",
-    "scene_id": "bin-picking-v3|seed1",
-    "affordx_index": 6,
-    "stability_index": 5
+    "cell": "metaworld_mt50",
+    "scene": "door-close-v3|seed3",
+    "run": "outputs/runs/agentic_loop_mt50/20260922T074022048329Z_1c6003a5e67c"
    },
    {
-    "label": "Meta-World MT50",
-    "scene_id": "button-press-v3|seed0",
-    "affordx_index": 11,
-    "stability_index": 12
+    "cell": "metaworld_mt50",
+    "scene": "push-v3|seed2",
+    "run": "outputs/runs/agentic_loop_mt50/20260922T074022048329Z_1c6003a5e67c"
+   },
+   {
+    "cell": "libero_goal_pos",
+    "scene": "libero_goal:1|seed1",
+    "run": "/nas/Selim/selim_sarowar/AFFORD-X/outputs/runs/agentic_loop/20260922T074210866867Z_aad0cdb31406"
    }
   ]
  },

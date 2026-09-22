@@ -535,19 +535,20 @@
     <div class="container is-max-desktop">
       <h2 class="title is-3 has-text-centered">What the Selection Looks Like</h2>
       <p class="ai-section-intro">
-        Candidate scores, the selected interaction and its execution, taken from rollout videos recorded during
-        evaluation. Click to enlarge.
+        Affordance-grounded arbitration and the agentic loop on logged episodes, each reproduced by replay. Click to
+        enlarge.
       </p>
       <figure class="ai-figure" style="margin-top:0">
         <img src="static/images/qualitative_results.jpg" class="ai-zoomable" loading="lazy"
-             alt="Four scenes, one per row: LIBERO-PRO Spatial and Goal under the position perturbation and two Meta-World MT50 tasks. The first column shows every candidate interaction coloured by the AFFORD-X decision score, with gated candidates crossed out and the selected interaction ringed; the next columns show contact, execution and task completion.">
+             alt="Four verified successes, one per row: LIBERO-PRO Goal and Object and two Meta-World MT50 tasks. The first column shows the candidates with gate rejections crossed, the rest coloured by affordance, the shortlist of two ringed and the arbiter's choice ringed in orange; the next columns show the execution and the verifier's confirmed verdict. A bottom strip shows a recovery: the first attempt is not verified, AFFORD-X replans with the tried point excluded, and the second attempt is verified.">
         <figcaption>
-          <strong>Left:</strong> candidate interactions projected into the video camera; crosses are removed by the
-          feasibility gate, the rest are coloured by the AFFORD-X score, the green ring is the selected interaction and
-          the orange diamond the candidate stability ranking would choose. <strong>Right:</strong> the selection at
-          contact, during execution and at task completion. Each row is the first scene, in sorted order, in which
-          AFFORD-X and stability ranking select different candidates, the recorded AFFORD-X rollout succeeds and the
-          stability-ranked one fails.
+          <strong>Left:</strong> candidate interactions in the third-person camera; crosses are removed by the
+          feasibility gate, the rest are coloured by affordance, purple rings mark the shortlist of two and the orange
+          ring the VLM arbiter's choice. <strong>Middle:</strong> the execution. <strong>Right:</strong> the camera view
+          the verifier judged, with its verdict. <strong>Bottom:</strong> the agentic loop recovering: the verifier rejects
+          the first attempt, AFFORD-X observes the new state, excludes candidates near the tried point, and the replanned
+          attempt is verified. Rows are the first qualifying episodes in scene order, by a rule fixed in
+          <code>scripts/figures/fig_qualitative.py</code>.
         </figcaption>
       </figure>
 
