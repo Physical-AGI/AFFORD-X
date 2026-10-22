@@ -99,16 +99,13 @@
       <i class="fas fa-bars"></i>
     </button>
     <div class="ai-nav-links" id="ai-nav-links">
-      <a href="#abstract">Abstract</a>
-      <a href="#method">Method</a>
-      <a href="#arbitration">Arbitration</a>
       <a href="#loop">Agentic loop</a>
-      <a href="#replay">Replay</a>
       <a href="#qualitative">Qualitative</a>
+      <a href="#replay">Replay</a>
       <a href="#libero">LIBERO-PRO</a>
+      <a href="#metaworld">Meta-World</a>
       <a href="#gate-3d">Gate in 3D</a>
       <a href="#rollouts-4d">4D rollouts</a>
-      <a href="#metaworld">Meta-World</a>
       <a href="#handle-points">Handle points</a>
       <a href="#bibtex">BibTeX</a>
     </div>
@@ -224,231 +221,8 @@
     </div>
   </section>
 
-  <!-- Abstract -->
-  <section class="section hero is-light" id="abstract">
-    <div class="container is-max-desktop">
-      <div class="columns is-centered has-text-centered">
-        <div class="column is-four-fifths">
-          <h2 class="title is-3">Abstract</h2>
-          <div class="content has-text-justified">
-            <p>
-              Direct action generation can commit to an interaction that is plausible, even stable, and still wrong for
-              the task: a hammer held by its head, a bowl grasped where the fingers cannot close. AFFORD-X makes that
-              choice explicit. Candidate interactions are scored by physical feasibility, functional affordance and task
-              compatibility; a <strong>feasibility gate</strong> removes what the embodiment cannot execute, and a frozen
-              vision-language model <strong>arbitrates</strong> only between the two candidates the affordance terms rank
-              highest, choosing from the camera image. A closed <strong>agentic loop</strong> executes the choice, asks a
-              frozen VLM verifier whether the before and after images show the task done, and replans from the new state
-              until it is verified. No module is trained. Evaluation is counterfactual: every method ranks the same
-              content-hashed candidate set and every candidate is executed in the benchmark's own simulator, so a success
-              difference is a difference in the selected interaction. On 510 LIBERO-PRO and Meta-World MT50 scenes held
-              out from every design choice, grounding the VLM in the affordance shortlist raises success over the same VLM
-              choosing freely by 0.045 [0.012, 0.084], and by 0.053 [0.014, 0.104] on LIBERO-PRO, and inside the shortlist
-              the VLM beats random choice by 0.050 [0.012, 0.091]. On Meta-World MT50 the agentic loop reaches 0.54 against
-              0.41 for single-shot selection on the same 100 development scenes, +0.13 [0.04, 0.24], and on LIBERO-PRO the
-              verifier accepted none of 189 failed attempts. Candidate geometry comes from simulator state, so the
-              selection layer is measured in isolation, and every comparison carries paired bootstrap intervals and
-              rollout videos recorded during evaluation.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Method -->
-  <section class="section" id="method">
-    <div class="container is-max-desktop">
-      <h2 class="title is-3 has-text-centered">From Instruction to Interaction</h2>
-      <p class="ai-section-intro">
-        Five stages; the arbitration rule and the agentic loop are ours, and nothing is trained. Pick a stage.
-      </p>
-
-      <div class="ai-loop">
-        <div class="ai-loop-stages" role="tablist" aria-label="Pipeline stages">
-          <button class="ai-stage" role="tab" aria-selected="true" data-stage="propose" style="--stage-c:var(--stage-agent)">
-            <span class="ai-stage-num">B</span>
-            <span><span class="ai-stage-name">Propose</span><span class="ai-stage-sub">Typed intent from the task definition</span></span>
-          </button>
-          <div class="ai-stage-arrow" role="presentation" aria-hidden="true"><i class="fas fa-arrow-down"></i></div>
-          <button class="ai-stage" role="tab" aria-selected="false" data-stage="candidates" style="--stage-c:var(--stage-ground)">
-            <span class="ai-stage-num">A</span>
-            <span><span class="ai-stage-name">Generate candidates</span><span class="ai-stage-sub">K grasps, one set for every method</span></span>
-          </button>
-          <div class="ai-stage-arrow" role="presentation" aria-hidden="true"><i class="fas fa-arrow-down"></i></div>
-          <button class="ai-stage" role="tab" aria-selected="false" data-stage="ground" style="--stage-c:var(--stage-ground)">
-            <span class="ai-stage-num">C&ndash;E</span>
-            <span><span class="ai-stage-name">Ground affordance</span><span class="ai-stage-sub">Feasibility, functional part, task</span></span>
-          </button>
-          <div class="ai-stage-arrow" role="presentation" aria-hidden="true"><i class="fas fa-arrow-down"></i></div>
-          <button class="ai-stage" role="tab" aria-selected="false" data-stage="arbitrate" style="--stage-c:var(--stage-select)">
-            <span class="ai-stage-num">F</span>
-            <span><span class="ai-stage-name">Arbitrate</span><span class="ai-stage-sub">Ours. Gate, affordance shortlist, VLM choice</span></span>
-          </button>
-          <div class="ai-stage-arrow" role="presentation" aria-hidden="true"><i class="fas fa-arrow-down"></i></div>
-          <button class="ai-stage" role="tab" aria-selected="false" data-stage="execute" style="--stage-c:var(--stage-execute)">
-            <span class="ai-stage-num">G</span>
-            <span><span class="ai-stage-name">Execute and verify</span><span class="ai-stage-sub">Ours. Closed agentic loop</span></span>
-          </button>
-        </div>
-        <div class="ai-loop-detail" id="ai-loop-detail">
-          <div class="ai-loop-eyebrow"></div>
-          <h3></h3>
-          <p class="ai-loop-lead"></p>
-          <p class="ai-loop-body"></p>
-          <div class="ai-loop-spec"></div>
-        </div>
-      </div>
-
-      <h2 class="title is-3 has-text-centered" style="margin-top:3.5rem">The Terms and the Rule</h2>
-      <p class="ai-section-intro">Feasibility decides eligibility. Function and task decide preference. The rule decides how they combine.</p>
-
-      <div class="ai-tabs" role="tablist">
-        <button class="ai-tab is-active" role="tab" aria-selected="true" data-tab="feas">C &middot; Feasibility</button>
-        <button class="ai-tab" role="tab" aria-selected="false" data-tab="func">D &middot; Functional</button>
-        <button class="ai-tab" role="tab" aria-selected="false" data-tab="task">E &middot; Task</button>
-        <button class="ai-tab" role="tab" aria-selected="false" data-tab="rule">F &middot; Rule</button>
-      </div>
-
-      <div class="ai-tab-panel is-active" role="tabpanel" data-panel="feas">
-        <div class="ai-note-grid">
-          <div class="ai-note">
-            <h3>Three factors</h3>
-            <p><em>r</em> is 1 inside the embodiment's workspace and 0.1 outside; <em>a</em> scores alignment with the
-              executor's top-down approach, with a floor of 0.3; <em>c</em> scores clearance from obstacle points
-              against a 5&nbsp;cm margin. None of them looks at the object's function.</p>
-          </div>
-          <div class="ai-note">
-            <h3>The gate</h3>
-            <p>A candidate is eligible when <em>r&middot;a&middot;c</em>&nbsp;&ge;&nbsp;0.5. The two eligible candidates
-              with the highest affordance score go to the VLM arbiter; when no candidate passes, the arbiter chooses among
-              all candidates instead of the arm executing nothing.</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="ai-tab-panel" role="tabpanel" data-panel="func">
-        <div class="ai-note-grid">
-          <div class="ai-note">
-            <h3>Where the region comes from</h3>
-            <p>A category prior names the handle for handled tools and containers, and it is the region source in every
-              reported run. The semantic proposer's intent can name any region. Objects
-              without a named region score every candidate neutrally.</p>
-          </div>
-          <div class="ai-note">
-            <h3>Where the points come from</h3>
-            <p><code>grasp_region:&lt;part&gt;</code> scores 1.0 within 3&nbsp;cm of the part's points, falling to 0 at
-              8&nbsp;cm. The reported runs take the part points from a geometric partition of the object cloud; the
-              SAM3 path takes them from text-prompted masks lifted through depth.</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="ai-tab-panel" role="tabpanel" data-panel="task">
-        <div class="ai-note-grid">
-          <div class="ai-note">
-            <h3>Compiled from the next action</h3>
-            <p>The declared next action (place, insert, pour, stack, hand over) compiles into geometric constraints
-              over the candidate set: which part must stay clear, which face needs clearance, which approach keeps the
-              view.</p>
-          </div>
-          <div class="ai-note">
-            <h3>What it adds</h3>
-            <p>Adding the task term on top of feasibility adds +0.07&nbsp;[+0.02,&nbsp;+0.12] success on LIBERO-PRO
-              Spatial Pos, with the lower bound of the paired interval above zero.</p>
-          </div>
-        </div>
-        <div class="ai-dsl">
-          <code>grasp_region</code><code>keep_part_clear</code><code>clearance</code><code>approach_from</code><code>avoid_occluding</code>
-        </div>
-      </div>
-
-      <div class="ai-tab-panel" role="tabpanel" data-panel="rule">
-        <div class="ai-note-grid">
-          <div class="ai-note">
-            <h3>Measured as a factorial</h3>
-            <p>Every level L1 to L3 runs the same rank terms under gate &isin; {none, feasibility} and combination
-              &isin; {weighted sum, product}, so the gate and the combination rule are measured separately rather
-              than as one package.</p>
-          </div>
-          <div class="ai-note">
-            <h3>What decides on the Franka</h3>
-            <p>On LIBERO-PRO Spatial Pos, gating a weighted sum adds +0.68&nbsp;[+0.59,&nbsp;+0.77] at L1, while the gate
-              changes nothing once the product rule is fixed: a product already drives an infeasible candidate to zero.</p>
-          </div>
-        </div>
-      </div>
-
-      <h2 class="title is-3 has-text-centered" style="margin-top:3.5rem">How We Measure</h2>
-      <div class="ax-cards ax-cards-3">
-        <div class="ax-card">
-          <div class="ax-card-eyebrow">Identical candidates</div>
-          <h3>Every method ranks the same set</h3>
-          <p>Candidate sets are content-hashed and shared across methods, so a difference in success is a difference
-            in which interaction was selected.</p>
-        </div>
-        <div class="ax-card">
-          <div class="ax-card-eyebrow">Simulator ground truth</div>
-          <h3>Every candidate is executed</h3>
-          <p>From the identical start state, in the benchmark's own simulator and success check. No method sees these
-            outcomes; sampled re-executions check determinism.</p>
-        </div>
-        <div class="ax-card">
-          <div class="ax-card-eyebrow">Paired intervals</div>
-          <h3>Differences on the same scenes</h3>
-          <p>Every difference between methods is a scene-clustered paired bootstrap interval (10,000 resamples), and
-            weights and thresholds are fixed in the experiment config before the run.</p>
-        </div>
-      </div>
-      <p class="ai-table-note">
-        Runs are immutable directories with resolved configs, code hashes, package versions and a file manifest, and
-        suites launch from frozen source snapshots. Rollout videos are recorded while the selected candidates execute,
-        and each is checked against the method's selection. In the current LIBERO-PRO runs, none of the 1,288 recorded
-        rollouts disagrees with its unrecorded simulator outcome. The arbitration rule was fixed on development scenes by
-        a declared procedure and tested once on held-out scenes; the agentic loop runs online, each attempt from the state
-        the previous one left, and its first attempt reproduced the stored single-shot outcome in all 280 episodes.
-      </p>
-    </div>
-  </section>
-
-  <!-- Arbitration -->
-  <section class="section hero is-light" id="arbitration">
-    <div class="container is-max-desktop">
-      <h2 class="title is-3 has-text-centered">Affordance-Grounded Arbitration</h2>
-      <p class="ai-section-intro">
-        The rule was fixed on 280 development scenes and then tested once on 510 scenes that played no part in any
-        choice: LIBERO-PRO Goal, Spatial and Object under Pos and Task, and Meta-World MT50. Every method ranks the same
-        candidates, and success is the simulator outcome of its choice. 95% intervals over task clusters; hover a bar.
-      </p>
-      <div class="ax-pills">
-        <button class="ax-pill is-active" data-arb="all">All held-out &middot; n = 510</button>
-        <button class="ax-pill" data-arb="libero_pro">LIBERO-PRO &middot; n = 360</button>
-        <button class="ax-pill" data-arb="mt50">Meta-World MT50 &middot; n = 150</button>
-      </div>
-      <div class="ax-chart-card ax-chart-host" id="ax-arb"></div>
-      <div class="ax-pairs" id="ax-arb-pairs"></div>
-      <div class="ax-cards ax-cards-3">
-        <div class="ax-card">
-          <div class="ax-card-eyebrow">Grounding the VLM</div>
-          <h3 id="ax-arb-h1"></h3>
-          <p id="ax-arb-p1"></p>
-        </div>
-        <div class="ax-card">
-          <div class="ax-card-eyebrow">Selection skill</div>
-          <h3 id="ax-arb-h2"></h3>
-          <p id="ax-arb-p2"></p>
-        </div>
-        <div class="ax-card">
-          <div class="ax-card-eyebrow">Fixed before testing</div>
-          <h3 id="ax-arb-h3"></h3>
-          <p id="ax-arb-p3"></p>
-        </div>
-      </div>
-    </div>
-  </section>
-
   <!-- Agentic loop -->
-  <section class="section" id="loop">
+  <section class="section hero is-light" id="loop">
     <div class="container is-max-desktop">
       <h2 class="title is-3 has-text-centered">The Agentic Loop</h2>
       <p class="ai-section-intro">
@@ -471,6 +245,48 @@
         was verified. Each video is a replay that reproduces the logged episode.
       </p>
       <div class="ax-video-grid" id="ax-recoveries"></div>
+    </div>
+  </section>
+
+  <!-- Qualitative -->
+  <section class="section" id="qualitative">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3 has-text-centered">What the Selection Looks Like</h2>
+      <p class="ai-section-intro">
+        Affordance-grounded arbitration and the agentic loop on logged episodes, each reproduced by replay. Click to
+        enlarge.
+      </p>
+      <figure class="ai-figure" style="margin-top:0">
+        <img src="static/images/qualitative_results.jpg" class="ai-zoomable" loading="lazy"
+             alt="Four verified successes, one per row: LIBERO-PRO Goal and Object and two Meta-World MT50 tasks. The first column shows the candidates with gate rejections crossed, the rest coloured by affordance, the shortlist of two ringed and the arbiter's choice ringed in orange; the next columns show the execution and the verifier's confirmed verdict. A bottom strip shows a recovery: the first attempt is not verified, AFFORD-X replans with the tried point excluded, and the second attempt is verified.">
+        <figcaption>
+          <strong>Left:</strong> candidate interactions in the third-person camera; crosses are removed by the
+          feasibility gate, the rest are coloured by affordance, purple rings mark the shortlist of two and the orange
+          ring the VLM arbiter's choice. <strong>Middle:</strong> the execution. <strong>Right:</strong> the camera view
+          the verifier judged, with its verdict. <strong>Bottom:</strong> the agentic loop recovering: the verifier rejects
+          the first attempt, AFFORD-X observes the new state, excludes candidates near the tried point, and the replanned
+          attempt is verified. Rows are the first qualifying episodes in scene order, by a rule fixed in
+          <code>scripts/figures/fig_qualitative.py</code>.
+        </figcaption>
+      </figure>
+
+      <h3 class="title is-4 has-text-centered" style="margin-top:2.5rem">Browse Successful Rollouts</h3>
+      <p class="ai-section-intro">
+        One recorded AFFORD-X rollout per LIBERO-PRO cell and per MT50 difficulty tier: the first scene, in sorted order,
+        in which the affordance layer's selection succeeded. Pick a clip, or use the arrow keys.
+      </p>
+      <div class="ax-gallery" id="ax-gallery">
+        <div id="ax-gallery-pills"></div>
+        <figure class="ax-video ax-gallery-player">
+          <video id="ax-gallery-video" muted loop playsinline controls preload="metadata"></video>
+          <p class="ax-video-fallback" id="ax-gallery-fallback" hidden>This rollout could not be played in your browser.</p>
+          <figcaption id="ax-gallery-caption" aria-live="polite"></figcaption>
+        </figure>
+        <div class="ax-gallery-nav">
+          <button class="ax-pill" type="button" id="ax-gallery-prev" aria-label="Previous rollout"><i class="fas fa-chevron-left" aria-hidden="true"></i> Previous</button>
+          <button class="ax-pill" type="button" id="ax-gallery-next" aria-label="Next rollout">Next <i class="fas fa-chevron-right" aria-hidden="true"></i></button>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -530,50 +346,8 @@
     </div>
   </section>
 
-  <!-- Qualitative -->
-  <section class="section" id="qualitative">
-    <div class="container is-max-desktop">
-      <h2 class="title is-3 has-text-centered">What the Selection Looks Like</h2>
-      <p class="ai-section-intro">
-        Affordance-grounded arbitration and the agentic loop on logged episodes, each reproduced by replay. Click to
-        enlarge.
-      </p>
-      <figure class="ai-figure" style="margin-top:0">
-        <img src="static/images/qualitative_results.jpg" class="ai-zoomable" loading="lazy"
-             alt="Four verified successes, one per row: LIBERO-PRO Goal and Object and two Meta-World MT50 tasks. The first column shows the candidates with gate rejections crossed, the rest coloured by affordance, the shortlist of two ringed and the arbiter's choice ringed in orange; the next columns show the execution and the verifier's confirmed verdict. A bottom strip shows a recovery: the first attempt is not verified, AFFORD-X replans with the tried point excluded, and the second attempt is verified.">
-        <figcaption>
-          <strong>Left:</strong> candidate interactions in the third-person camera; crosses are removed by the
-          feasibility gate, the rest are coloured by affordance, purple rings mark the shortlist of two and the orange
-          ring the VLM arbiter's choice. <strong>Middle:</strong> the execution. <strong>Right:</strong> the camera view
-          the verifier judged, with its verdict. <strong>Bottom:</strong> the agentic loop recovering: the verifier rejects
-          the first attempt, AFFORD-X observes the new state, excludes candidates near the tried point, and the replanned
-          attempt is verified. Rows are the first qualifying episodes in scene order, by a rule fixed in
-          <code>scripts/figures/fig_qualitative.py</code>.
-        </figcaption>
-      </figure>
-
-      <h3 class="title is-4 has-text-centered" style="margin-top:2.5rem">Browse Successful Rollouts</h3>
-      <p class="ai-section-intro">
-        One recorded AFFORD-X rollout per LIBERO-PRO cell and per MT50 difficulty tier: the first scene, in sorted order,
-        in which the affordance layer's selection succeeded. Pick a clip, or use the arrow keys.
-      </p>
-      <div class="ax-gallery" id="ax-gallery">
-        <div id="ax-gallery-pills"></div>
-        <figure class="ax-video ax-gallery-player">
-          <video id="ax-gallery-video" muted loop playsinline controls preload="metadata"></video>
-          <p class="ax-video-fallback" id="ax-gallery-fallback" hidden>This rollout could not be played in your browser.</p>
-          <figcaption id="ax-gallery-caption" aria-live="polite"></figcaption>
-        </figure>
-        <div class="ax-gallery-nav">
-          <button class="ax-pill" type="button" id="ax-gallery-prev" aria-label="Previous rollout"><i class="fas fa-chevron-left" aria-hidden="true"></i> Previous</button>
-          <button class="ax-pill" type="button" id="ax-gallery-next" aria-label="Next rollout">Next <i class="fas fa-chevron-right" aria-hidden="true"></i></button>
-        </div>
-      </div>
-    </div>
-  </section>
-
   <!-- LIBERO-PRO -->
-  <section class="section hero is-light" id="libero">
+  <section class="section" id="libero">
     <div class="container is-max-desktop">
       <h2 class="title is-3 has-text-centered">LIBERO-PRO Goal, Spatial and Object, Pos and Task</h2>
       <p class="ai-section-intro">
@@ -636,45 +410,8 @@
     </div>
   </section>
 
-  <!-- Feasibility gate in 3D -->
-  <section class="section" id="gate-3d">
-    <div class="container is-max-desktop">
-      <h2 class="title is-3 has-text-centered">The Feasibility Gate in 3D</h2>
-      <p class="ai-section-intro">
-        On LIBERO-PRO the gate keeps a grasp when reach &times; approach &times; collision is at least 0.5, and reach drops to
-        0.1 outside the Franka workspace, a box fixed to the robot base (x &minus;0.10 to 0.75&nbsp;m, y &minus;0.50 to
-        0.50&nbsp;m, z 0.005 to 0.90&nbsp;m). Each cell shows one scene, chosen before looking at outcomes as the first in
-        task and initial-state order where the gate removes some grasps and keeps others.
-      </p>
-      <div class="ax-embed is-dark">
-        <iframe id="ax-gate-3d" src="gate-3d.html" title="Feasibility gate in 3D" loading="lazy"></iframe>
-      </div>
-      <p class="ai-table-note">
-        In the five scenes the gate removes 2 to 7 of 12 grasps, and 27 of the 28 removals lie outside the workspace; the
-        one removed inside it, in LIBERO-Spatial Pos, has a collision term of 0.497. The gate removes some grasps in 41 of
-        80 Goal Pos, 99 of 100 Spatial Pos, 80 of 80 Spatial Task, 30 of 100 Object Pos and 10 of 100 Object Task scenes.
-        <a href="gate-3d.html">Open the viewer on its own page</a>.
-      </p>
-    </div>
-  </section>
-
-  <!-- Rollouts in 4D -->
-  <section class="section" id="rollouts-4d">
-    <div class="container is-max-desktop">
-      <h2 class="title is-3 has-text-centered">Rollouts in 4D</h2>
-      <p class="ai-section-intro">
-        One recorded AFFORD-X rollout per benchmark, replayed from the same reset with a depth camera. SAM3 tracks the
-        object through every frame, each mask is lifted through that frame's depth, and the gripper and arm come from the
-        simulator's geometry map. This is a visualization: no reported result reads these frames.
-      </p>
-      <div class="ax-embed is-dark">
-        <iframe id="ax-rollouts-4d" src="rollouts-4d.html" title="Rollouts in 4D" loading="lazy"></iframe>
-      </div>
-    </div>
-  </section>
-
   <!-- Meta-World -->
-  <section class="section" id="metaworld">
+  <section class="section hero is-light" id="metaworld">
     <div class="container is-max-desktop">
       <h2 class="title is-3 has-text-centered">Meta-World MT50, 50 Tasks</h2>
       <p class="ai-section-intro">
@@ -704,6 +441,43 @@
     </div>
   </section>
 
+  <!-- Feasibility gate in 3D -->
+  <section class="section" id="gate-3d">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3 has-text-centered">The Feasibility Gate in 3D</h2>
+      <p class="ai-section-intro">
+        On LIBERO-PRO the gate keeps a grasp when reach &times; approach &times; collision is at least 0.5, and reach drops to
+        0.1 outside the Franka workspace, a box fixed to the robot base (x &minus;0.10 to 0.75&nbsp;m, y &minus;0.50 to
+        0.50&nbsp;m, z 0.005 to 0.90&nbsp;m). Each cell shows one scene, chosen before looking at outcomes as the first in
+        task and initial-state order where the gate removes some grasps and keeps others.
+      </p>
+      <div class="ax-embed is-dark">
+        <iframe id="ax-gate-3d" src="gate-3d.html" title="Feasibility gate in 3D" loading="lazy"></iframe>
+      </div>
+      <p class="ai-table-note">
+        In the five scenes the gate removes 2 to 7 of 12 grasps, and 27 of the 28 removals lie outside the workspace; the
+        one removed inside it, in LIBERO-Spatial Pos, has a collision term of 0.497. The gate removes some grasps in 41 of
+        80 Goal Pos, 99 of 100 Spatial Pos, 80 of 80 Spatial Task, 30 of 100 Object Pos and 10 of 100 Object Task scenes.
+        <a href="gate-3d.html">Open the viewer on its own page</a>.
+      </p>
+    </div>
+  </section>
+
+  <!-- Rollouts in 4D -->
+  <section class="section hero is-light" id="rollouts-4d">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3 has-text-centered">Rollouts in 4D</h2>
+      <p class="ai-section-intro">
+        One recorded AFFORD-X rollout per benchmark, replayed from the same reset with a depth camera. SAM3 tracks the
+        object through every frame, each mask is lifted through that frame's depth, and the gripper and arm come from the
+        simulator's geometry map. This is a visualization: no reported result reads these frames.
+      </p>
+      <div class="ax-embed is-dark">
+        <iframe id="ax-rollouts-4d" src="rollouts-4d.html" title="Rollouts in 4D" loading="lazy"></iframe>
+      </div>
+    </div>
+  </section>
+
   <!-- Handle points in 3D -->
   <section class="section" id="handle-points">
     <div class="container is-max-desktop">
@@ -727,7 +501,7 @@
   </section>
 
   <!-- BibTeX -->
-  <section class="section" id="bibtex">
+  <section class="section hero is-light" id="bibtex">
     <div class="container is-max-desktop content">
       <div class="bibtex-header">
         <h2 class="title">BibTeX</h2>
