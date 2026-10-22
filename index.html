@@ -18,7 +18,7 @@
   <meta property="og:description" content="Remove what the arm cannot execute, then rank by function and task. Counterfactual evaluation on identical candidate sets, with rollout videos.">
   <meta property="og:url" content="https://physical-agi.github.io/AFFORD-X/">
   <meta property="og:image" content="https://physical-agi.github.io/AFFORD-X/static/images/method_framework.png">
-  <meta property="og:image:alt" content="The AFFORD-X framework drawn on logged episodes: propose a typed intent and candidate interactions, ground feasibility, functional and task affordance terms, arbitrate with a feasibility gate, an affordance shortlist and a frozen VLM, then execute and verify in a closed agentic loop">
+  <meta property="og:image:alt" content="The AFFORD-X framework: perceive instances with SAM3 and Gemini, gate feasibility (Can), rank contacts via contact mechanics and task affordance (Should), then act and verify in a closed replanning loop">
   <meta property="article:section" content="Robotics">
   <meta property="article:tag" content="robot manipulation">
   <meta property="article:tag" content="affordance">
@@ -180,17 +180,9 @@
       <div class="hero-body">
         <figure class="ai-figure" style="margin-top:0">
           <img src="static/images/method_framework.png" class="ai-zoomable"
-               alt="The AFFORD-X framework drawn on logged episodes: an instruction and the benchmark's camera RGB; Propose, a typed intent from the task definition and top-down grasp candidates; Ground, feasibility, functional-part and task-compatibility terms with infeasible candidates removed; Arbitrate, a feasibility gate, an affordance shortlist of two and a frozen VLM choosing from the image; Execute and verify, recorded successful rollouts on Meta-World and LIBERO-PRO Spatial and Object with a VLM verifier and a replan loop">
+               alt="The AFFORD-X framework drawn on logged episodes: (1) Perceive instances in RGB-D with SAM3 and Gemini and sample top-down contacts; (2) Can, gate feasibility via reach, approach and clearance; (3) Should, order feasible contacts by contact mechanics and affordance; (4) Act and verify, execute scripted skills with a Gemini verifier in a closed agentic replan loop">
           <figcaption>
-            <strong>AFFORD-X on logged episodes.</strong> <strong>Propose</strong>: a typed intent from the task
-            definition and top-down grasp candidates on the object. <strong>Ground</strong>: feasibility, functional-part
-            and task-compatibility terms for every candidate. <strong>Arbitrate</strong>: the feasibility gate removes what
-            the arm cannot execute, the two gated candidates with the highest affordance score form a shortlist, and a
-            frozen VLM (Gemini 3.8 Flash) chooses between them from the camera image. <strong>Execute and verify</strong>:
-            the executor acts, a frozen VLM verifier compares the before and after images, and an unverified attempt sends
-            the agent back to replan from the new state. The main scene is Meta-World disassemble; the rows are verified
-            successes on LIBERO-PRO Spatial and Object. Every image, score and verdict is read from logged episodes and
-            reproduced by replay, and no module is trained.
+            <strong>AFFORD-X framework on logged episodes.</strong> (1) <strong>Perceive</strong>: SAM3 segments instances in the RGB-D observation, Gemini identifies the target instance from the instruction, and top-down candidate contacts are sampled on the observed surface. (2) <strong>Can</strong>: a feasibility gate removes contacts the robot cannot reach, approach, or execute without collision. (3) <strong>Should</strong>: feasible contacts are ordered by the mechanics of the skill (preferring contacts behind the part on its line of push for pushing, and task affordance for grasping). (4) <strong>Act and verify</strong>: a scripted skill executes the contact, Gemini verifies the outcome from camera views before and after, and unverified attempts replan from the new state. All models are frozen and no parameters are trained.
           </figcaption>
         </figure>
       </div>
